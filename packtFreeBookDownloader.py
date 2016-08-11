@@ -2,6 +2,8 @@
 
 from __future__ import print_function, unicode_literals, division, absolute_import  # We require Python 2.6 or later
 
+from IPython import embed
+
 __author__ = "Lukasz Uszko, Daniel van Dorp"
 __copyright__ = "Copyright 2016"
 __license__ = "MIT"
@@ -28,17 +30,16 @@ import re
 from collections import OrderedDict
 from bs4 import BeautifulSoup
 
+reqHeaders = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 
 class MyPacktPublishingBooksDownloader(object):
-    
+
     def __init__(self,session=None):
-    
+
         self.packtPubUrl= "https://www.packtpub.com"
         self.myBooksUrl= "https://www.packtpub.com/account/my-ebooks"
         self.loginUrl= "https://www.packtpub.com/register"
-        self.reqHeaders={'Connection':'keep-alive',
-                    'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'}
         self.myPacktEmail, self.myPacktPassword= self.getLoginData("configFile.cfg")
         self.downloadFolderPath,self.downloadFormats,self.downloadBookTitles= self.getDownloadData("configFile.cfg")
         if(not os.path.exists(self.downloadFolderPath)):
@@ -48,8 +49,8 @@ class MyPacktPublishingBooksDownloader(object):
         if self.session is None:
             self.createSession()
         self.bookData=None
-        
-    
+
+
     def getLoginData(self, cfgFilePath):
         config =configparser.ConfigParser()
         try:
@@ -61,7 +62,7 @@ class MyPacktPublishingBooksDownloader(object):
         except configparser.Error as e:
             print("[ERROR] "+cfgFilePath+ " file incorrect or doesn't exist! : "+str(e))
             sys.exit(1)
-            
+
     def getDownloadData(self, cfgFilePath):
         config =configparser.ConfigParser()
         try:
@@ -81,7 +82,7 @@ class MyPacktPublishingBooksDownloader(object):
         except configparser.Error as e:
             print("[ERROR] "+cfgFilePath+ " file incorrect or doesn't exist! : "+str(e))
             sys.exit(1)
-    
+
     def createSession(self):
         formData= {'email':self.myPacktEmail,
                 'password':self.myPacktPassword,
@@ -91,28 +92,30 @@ class MyPacktPublishingBooksDownloader(object):
         try:
             #to get form_build_id
             print("Creates session ...")
-            r = requests.get(self.loginUrl,headers=self.reqHeaders,timeout=10)
+            r = requests.get(self.loginUrl,timeout=10, headers=reqHeaders)
             content = BeautifulSoup(str(r.content), 'html.parser')
             formBuildId = [element['value'] for element in content.find(id='packt-user-login-form').find_all('input',{'name':'form_build_id'})]
             formData['form_build_id']=formBuildId[0]
         except requests.exceptions.RequestException as exception:
             print("[ERROR] - Exception occured %s "%exception )
-                
+
         try:
             self.session = requests.Session()
-            rPost = self.session.post(self.loginUrl, headers=self.reqHeaders,data=formData)
+            rPost = self.session.post(self.loginUrl, headers=reqHeaders,data=formData)
             if(rPost.status_code is not 200):
-                raise requests.exceptions.RequestException("login failed! ")               
+                raise requests.exceptions.RequestException("login failed! ")
         except requests.exceptions.RequestException as exception:
             print("[ERROR] - Exception occured %s "%exception )
             sys.exit(1)
-            
+
     def getDataOfAllMyBooks(self):
         try:
             print("Getting books data ...")
-            r = self.session.get(self.myBooksUrl,headers=self.reqHeaders,timeout=10)
+            r = self.session.get(self.myBooksUrl,timeout=10, headers=reqHeaders)
             if(r.status_code is 200):
                 print("opened  '"+ self.myBooksUrl+"' succesfully!")
+            else:
+                print('failed with code %d' % (r.status_code))
             myBooksHtml = BeautifulSoup(r.text, 'html.parser')
             all =  myBooksHtml.find(id='product-account-list').find_all('div', {'class':'product-line unseen'})
             self.bookData= [ {'title': re.sub(r'\s*\[e\w+\]\s*','',attr['title'], flags=re.I ).strip(' '), 'id':attr['nid']}   for attr in all]
@@ -125,16 +128,16 @@ class MyPacktPublishingBooksDownloader(object):
                            downloadUrls[m.group(4)]= m.group(0)
                         else:
                             downloadUrls['code']= m.group(0)
-                self.bookData[i]['downloadUrls']=downloadUrls 
+                self.bookData[i]['downloadUrls']=downloadUrls
         except requests.exceptions.RequestException as exception:
             print("[ERROR] - Exception occured %s "%exception )
-            
-            
+
+
     def downloadBooks(self,titles=None,formats=None): #titles= list('C# tutorial', 'c++ Tutorial') ; format=tuple('pdf','mobi','epub','code')
         try:
             #download ebook
             if formats is None:
-                formats=('pdf','mobi','epub','code')   
+                formats=('pdf','mobi','epub','code')
             if titles is not None:
                 tempBookData = [data for i,data in enumerate(self.bookData) if any(data['title']==title for title in titles) ]
             else:
@@ -158,30 +161,30 @@ class MyPacktPublishingBooksDownloader(object):
                             pass
                         else:
                             if format == 'code':
-                                print("downloading code for eBook: '"+tempBookData[i]['title']+ "'...")                           
+                                print("downloading code for eBook: '"+tempBookData[i]['title']+ "'...")
                             else:
                                 print("downloading eBook: '"+tempBookData[i]['title']+"' in '."+format+ "' format...")
-                            r = self.session.get(self.packtPubUrl+tempBookData[i]['downloadUrls'][format],headers=self.reqHeaders,timeout=100)
+                            r = self.session.get(self.packtPubUrl+tempBookData[i]['downloadUrls'][format],timeout=100, headers=reqHeaders)
                             if(r.status_code is 200):
                                 with open(fullFilePath,'wb') as f:
                                     f.write(r.content)
                                 if format == 'code':
-                                    print("[SUCCESS] code for eBook: '"+tempBookData[i]['title']+"' downloaded succesfully!")                           
+                                    print("[SUCCESS] code for eBook: '"+tempBookData[i]['title']+"' downloaded succesfully!")
                                 else:
-                                    print("[SUCCESS] eBook: '"+tempBookData[i]['title']+'.'+format+"' downloaded succesfully!")      
+                                    print("[SUCCESS] eBook: '"+tempBookData[i]['title']+'.'+format+"' downloaded succesfully!")
                                 nrOfBooksDownloaded=i+1
                             else:
-                                raise requests.exceptions.RequestException("Cannot download "+tempBookData[i]['title'])                            
-            print(str(nrOfBooksDownloaded)+" eBooks have been downloaded !")          
+                                raise requests.exceptions.RequestException("Cannot download "+tempBookData[i]['title'])
+            print(str(nrOfBooksDownloaded)+" eBooks have been downloaded !")
         except requests.exceptions.RequestException as exception:
             print("[ERROR] - Exception occured during GET request%s "%exception )
         except IOError as exception:
             print("[ERROR] - Exception occured durin opening file %s "%exception )
-        
-       
-        
+
+
+
 if __name__ == '__main__':
-    
+
     downloader = MyPacktPublishingBooksDownloader()
     downloader.getDataOfAllMyBooks()
     downloader.downloadBooks(downloader.downloadBookTitles, downloader.downloadFormats)
