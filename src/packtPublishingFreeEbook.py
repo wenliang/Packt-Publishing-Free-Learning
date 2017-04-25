@@ -1,22 +1,24 @@
 #!/usr/bin/env python
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 
-import requests
-import os
-import configparser
 import argparse
+import configparser
+import os
 import re
 import sys
+import time
 from collections import OrderedDict
+
+import requests
 from bs4 import BeautifulSoup
 
 from utils import *
+
 logger = log_manager.get_logger(__name__)
 # downgrading logging level for requests
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 
-#################################-MAIN CLASSES-###########################################
 class PacktAccountDataModel(object):
     """Contains all needed urls, passwords and packtpub account data stored in .cfg file"""
 
