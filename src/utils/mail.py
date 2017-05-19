@@ -20,16 +20,16 @@ DEFAULT_SUBJECT = "New free packt ebook"
 class MailBook:
 
     def __init__(self, cfgFilePath):
-        myDefaults = {'fromEmail': None,'toEmails': [],'kindleEmails': None, }
-        config = configparser.ConfigParser(defaults=myDefaults)
+        my_defaults = {'fromEmail': None,'toEmails': [],'kindleEmails': None, }
+        config = configparser.ConfigParser(defaults=my_defaults)
         config.read(cfgFilePath)
         try:
             self._smtp_host = config.get("MAIL", 'host')
             self._smtp_port = config.get("MAIL", 'port')
             self._email_pass = config.get("MAIL", 'password')
             self._send_from = config.get("MAIL", 'email')
-            self._to_emails = config.get("MAIL", 'toEmails').split(COMMA)
-            self._kindle_emails = config.get("MAIL", 'kindleEmails').split(COMMA)
+            self._to_emails = config.get("MAIL", 'to_emails').split(COMMA)
+            self._kindle_emails = config.get("MAIL", 'kindle_emails').split(COMMA)
         except configparser.NoSectionError:
             raise ValueError("ERROR: need at least one from and one or more to emails")
     

@@ -27,9 +27,9 @@ class GoogleDriveManager():
     """Allows to upload and download new content to Google Drive"""
 
     def __init__(self, cfg_file_path):
-        self.__set_config_data(cfg_file_path)
-        self._root_folder= GoogleDriveFile(self.folder_name)
-        self._credentials = self.__get_credentials()
+        self._set_config_data(cfg_file_path)
+        self._root_folder = GoogleDriveFile(self.folder_name)
+        self._credentials = self._get_credentials()
         self._http_auth = self._credentials.authorize(httplib2.Http())
         self._service = discovery.build('drive', 'v3', http=self._http_auth)
         self._root_folder.id=self.check_if_file_exist_create_new_one(self._root_folder.name)
@@ -37,15 +37,15 @@ class GoogleDriveManager():
         # downgrading logging level for google api
         logging.getLogger("apiclient").setLevel(logging.WARNING)
 
-    def __set_config_data(self, cfg_file_path):
+    def _set_config_data(self, cfg_file_path):
         """Sets all the config data for Google drive manager"""
         configuration = configparser.ConfigParser()
         if not configuration.read(cfg_file_path):
             raise configparser.Error('{} file not found'.format(cfg_file_path))
-        self.app_name = configuration.get("GOOGLE_DRIVE_DATA", 'gdAppName')
-        self.folder_name = configuration.get("GOOGLE_DRIVE_DATA", 'gdFolderName')
+        self.app_name = configuration.get("GOOGLE_DRIVE_DATA", 'gd_app_name')
+        self.folder_name = configuration.get("GOOGLE_DRIVE_DATA", 'gd_folder_name')
 
-    def __get_credentials(self):
+    def _get_credentials(self):
         '''Gets valid user credentials from storage.
         If nothing has been stored, or if the stored credentials are invalid,
         the OAuth2 flow is completed to obtain the new credentials.

@@ -35,84 +35,84 @@ class PacktAccountDataModel(object):
         self.configuration = configparser.ConfigParser()
         if not self.configuration.read(self.cfg_file_path):
             raise configparser.Error('{} file not found'.format(self.cfg_file_path))
-        self.book_infodata_log_file = self.__getConfigEbookExtraInfoLogFilename()
+        self.book_infodata_log_file = self._get_config_ebook_extrainfo_log_filename()
         self.packtpub_url = "https://www.packtpub.com"
         self.my_books_url = "https://www.packtpub.com/account/my-ebooks"
         self.login_url = "https://www.packtpub.com/register"
-        self.freeLearningUrl = "https://www.packtpub.com/packt/offers/free-learning"
-        self.reqHeaders = {'Connection': 'keep-alive',
+        self.freelearning_url = "https://www.packtpub.com/packt/offers/free-learning"
+        self.req_headers = {'Connection': 'keep-alive',
                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 '
                                          '(KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'}
-        self.myPacktEmail, self.myPacktPassword = self.__getConfigLoginData()
-        self.downloadFolderPath, self.downloadFormats, self.downloadBookTitles = self.__getConfigDownloadData()
-        if not os.path.exists(self.downloadFolderPath):
-            message = "Download folder path: '{}' doesn't exist".format(self.downloadFolderPath)
+        self.my_packt_email, self.my_packt_password = self._get_config_login_data()
+        self.download_folder_path, self.download_formats, self.download_book_titles = self._get_config_download_data()
+        if not os.path.exists(self.download_folder_path):
+            message = "Download folder path: '{}' doesn't exist".format(self.download_folder_path)
             logger.error(message)
             raise ValueError(message)
 
-    def __getConfigEbookExtraInfoLogFilename(self):
+    def _get_config_ebook_extrainfo_log_filename(self):
         """Gets the filename of the ebook metadata log file."""
-        return self.configuration.get("DOWNLOAD_DATA", 'ebookExtraInfoLogFilePath')
+        return self.configuration.get("DOWNLOAD_DATA", 'ebook_extra_info_log_file_path')
 
-    def __getConfigLoginData(self):
+    def _get_config_login_data(self):
         """Gets user login credentials."""
         email = self.configuration.get("LOGIN_DATA", 'email')
         password = self.configuration.get("LOGIN_DATA", 'password')
         return email, password
 
-    def __getConfigDownloadData(self):
+    def _get_config_download_data(self):
         """Downloads ebook data from the user account."""
-        downloadPath = self.configuration.get("DOWNLOAD_DATA", 'downloadFolderPath')
-        downloadFormats = tuple(form.replace(' ', '') for form in
-                                self.configuration.get("DOWNLOAD_DATA", 'downloadFormats').split(','))
-        downloadBookTitles = None
+        download_path = self.configuration.get("DOWNLOAD_DATA", 'download_folder_path')
+        download_formats = tuple(form.replace(' ', '') for form in
+                                self.configuration.get("DOWNLOAD_DATA", 'download_formats').split(','))
+        download_book_titles = None
         try:
-            downloadBookTitles = [title.strip(' ') for title in
-                                  self.configuration.get("DOWNLOAD_DATA", 'downloadBookTitles').split(',')]
-            if len(downloadBookTitles) is 0:
-                downloadBookTitles = None
+            download_book_titles = [title.strip(' ') for title in
+                                  self.configuration.get("DOWNLOAD_DATA", 'download_book_titles').split(',')]
+            if len(download_book_titles) is 0:
+                download_book_titles = None
         except configparser.Error as e:
             pass
-        return downloadPath, downloadFormats, downloadBookTitles
+        return download_path, download_formats, download_book_titles
 
     @staticmethod
-    def convertBookTitleToValidString(title):
+    def convert_book_title_to_valid_string(title):
         """removes all unicodes and chars only valid in pathnames on Linux/Windows OS"""
         if title is not None:
-            return re.sub(r'(?u)[^-\w.#]', '', title.strip().replace(' ', '_'))#format valid pathname
+            return re.sub(r'(?u)[^-\w.#]', '', title.strip().replace(' ', '_'))# format valid pathname
         return None
 
 class PacktPubHttpSession(object):
     """Responsible for creating a http session and logs int your account"""    
     
-    def __init__(self, accountConfigData):
-        self.accountConfig = accountConfigData
-        self.session = self.__createHttpSession()
+    def __init__(self, account_config_data):
+        self.account_config = account_config_data
+        self.session = self._create_http_session()
 
-    def getCurrentConfig(self):
-        return self.accountConfig
+    def get_current_config(self):
+        return self.account_config
 
-    def getCurrentHttpSession(self):
+    def get_current_http_session(self):
         return self.session
 
-    def __createHttpSession(self):
+    def _create_http_session(self):
         """Creates the http session"""
-        formData = {'email': self.accountConfig.myPacktEmail,
-                    'password': self.accountConfig.myPacktPassword,
+        form_data = {'email': self.account_config.my_packt_email,
+                    'password': self.account_config.my_packt_password,
                     'op': 'Login',
                     'form_build_id': '',
                     'form_id': 'packt_user_login_form'}
         # to get form_build_id
         logger.info("Creating session...")
-        rGet = requests.get(self.accountConfig.login_url, headers=self.accountConfig.reqHeaders, timeout=10)
+        rGet = requests.get(self.account_config.login_url, headers=self.account_config.req_headers, timeout=10)
         content = BeautifulSoup(str(rGet.content), 'html.parser')
-        formBuildId = [element['value'] for element in
+        form_build_id = [element['value'] for element in
                        content.find(id='packt-user-login-form').find_all('input', {'name': 'form_build_id'})]
-        formData['form_build_id'] = formBuildId[0]
+        form_data['form_build_id'] = form_build_id[0]
         session = requests.Session()
-        rPost = session.post(self.accountConfig.login_url, headers=self.accountConfig.reqHeaders, data=formData)
+        rPost = session.post(self.account_config.login_url, headers=self.account_config.req_headers, data=form_data)
         #check once again if we are really logged into the server
-        rGet = session.get(self.accountConfig.my_books_url, headers=self.accountConfig.reqHeaders, timeout=10)
+        rGet = session.get(self.account_config.my_books_url, headers=self.account_config.req_headers, timeout=10)
         if rPost.status_code is not 200 or rGet.text.find("register-page-form") != -1:
             message = "Login failed!"
             logger.error(message)
@@ -125,68 +125,68 @@ class BookGrabber(object):
     """Claims (grabs) a free daily ebook, retrieving its title"""
 
     def __init__(self, currentSession):
-        self.session = currentSession.getCurrentHttpSession()
-        self.accountData = currentSession.getCurrentConfig()
-        self.bookTitle = ""
+        self.session = currentSession.get_current_http_session()
+        self.account_data = currentSession.get_current_config()
+        self.book_title = ""
 
-    def __writeEbookInfoData(self, data):
+    def _write_ebook_infodata(self, data):
         """
         Write result to file
         :param data: the data to be written down
         """
-        with open(self.accountData.book_infodata_log_file, "a") as output:
+        with open(self.account_data.book_infodata_log_file, "a") as output:
             output.write('\n')
             for key, value in data.items():
                 output.write('{} --> {}\n'.format(key.upper(), value))
         logger.info("Complete information for '{}' have been saved".format(data["title"]))
 
-    def getEbookInfoData(self, r):
+    def get_ebook_infodata(self, r):
         """
         Log grabbed book information to log file
         :param r: the previous response got when book has been successfully added to user library
         :return: the data ready to be written to the log file
         """
-        logger.info("Retrieving complete information for '{}'".format(self.bookTitle))
-        r = self.session.get(self.accountData.freeLearningUrl,
-                             headers=self.accountData.reqHeaders, timeout=10)
-        resultHtml = BeautifulSoup(r.text, 'html.parser')
-        lastGrabbedBook = resultHtml.find('div', {'class': 'dotd-main-book-image'})
-        bookUrl = lastGrabbedBook.find('a').attrs['href']
-        bookPage = self.session.get(self.accountData.packtpub_url + bookUrl,
-                                    headers=self.accountData.reqHeaders, timeout=10).text
-        page = BeautifulSoup(bookPage, 'html.parser')
+        logger.info("Retrieving complete information for '{}'".format(self.book_title))
+        r = self.session.get(self.account_data.freelearning_url,
+                             headers=self.account_data.req_headers, timeout=10)
+        result_html = BeautifulSoup(r.text, 'html.parser')
+        last_grabbed_book = result_html.find('div', {'class': 'dotd-main-book-image'})
+        book_url = last_grabbed_book.find('a').attrs['href']
+        book_page = self.session.get(self.account_data.packtpub_url + book_url,
+                                    headers=self.account_data.req_headers, timeout=10).text
+        page = BeautifulSoup(book_page, 'html.parser')
 
-        resultData = OrderedDict()
-        resultData["title"] = self.bookTitle
-        resultData["description"] = page.find('div', {'class': 'book-top-block-info-one-liner'}).text.strip()
+        result_data = OrderedDict()
+        result_data["title"] = self.book_title
+        result_data["description"] = page.find('div', {'class': 'book-top-block-info-one-liner'}).text.strip()
         author = page.find('div', {'class': 'book-top-block-info-authors'})
-        resultData["author"] = author.text.strip().split("\n")[0]
-        resultData["date_published"] = page.find('time').text
-        codeDownloadUrl = page.find('div', {'class': 'book-top-block-code'}).find('a').attrs['href']
-        resultData["code_files_url"] = self.accountData.packtpub_url + codeDownloadUrl
-        resultData["downloaded_at"] = time.strftime("%d-%m-%Y %H:%M")
-        logger.success("Info data retrieved for '{}'".format(self.bookTitle))
-        self.__writeEbookInfoData(resultData)
-        return resultData
+        result_data["author"] = author.text.strip().split("\n")[0]
+        result_data["date_published"] = page.find('time').text
+        code_download_url = page.find('div', {'class': 'book-top-block-code'}).find('a').attrs['href']
+        result_data["code_files_url"] = self.account_data.packtpub_url + code_download_url
+        result_data["downloaded_at"] = time.strftime("%d-%m-%Y %H:%M")
+        logger.success("Info data retrieved for '{}'".format(self.book_title))
+        self._write_ebook_infodata(result_data)
+        return result_data
 
-    def grabEbook(self, logEbookInfodata = False):
+    def grab_ebook(self, log_ebook_infodata = False):
         """Grabs the ebook"""
         logger.info("Start grabbing eBook...")
-        r = self.session.get(self.accountData.freeLearningUrl,
-                             headers=self.accountData.reqHeaders, timeout=10)
+        r = self.session.get(self.account_data.freelearning_url,
+                             headers=self.account_data.req_headers, timeout=10)
         if r.status_code is not 200:
             raise requests.exceptions.RequestException("http GET status code != 200")
         html = BeautifulSoup(r.text, 'html.parser')
-        claimUrl = html.find(attrs={'class': 'twelve-days-claim'})['href']
-        self.bookTitle = PacktAccountDataModel.convertBookTitleToValidString(html.find('div', {'class': 'dotd-title'}).find('h2').next_element)
-        r = self.session.get(self.accountData.packtpub_url + claimUrl,
-                             headers=self.accountData.reqHeaders, timeout=10)
+        claim_url = html.find(attrs={'class': 'twelve-days-claim'})['href']
+        self.book_title = PacktAccountDataModel.convert_book_title_to_valid_string(html.find('div', {'class': 'dotd-title'}).find('h2').next_element)
+        r = self.session.get(self.account_data.packtpub_url + claim_url,
+                             headers=self.account_data.req_headers, timeout=10)
         if r.status_code is 200 and r.text.find('My eBooks') != -1:
-            logger.success("eBook: '{}' has been successfully grabbed!".format(self.bookTitle))
-            if logEbookInfodata:
-                self.getEbookInfoData(r)
+            logger.success("eBook: '{}' has been successfully grabbed!".format(self.book_title))
+            if log_ebook_infodata:
+                self.get_ebook_infodata(r)
         else:
-            message = "eBook: {} has not been grabbed!, does this promo exist yet? visit the page and check!".format(self.bookTitle)
+            message = "eBook: {} has not been grabbed!, does this promo exist yet? visit the page and check!".format(self.book_title)
             logger.error(message)
             raise requests.exceptions.RequestException(message)
 
@@ -195,43 +195,36 @@ class BookDownloader(object):
     """Downloads already claimed ebooks from your account"""
 
     def __init__(self, currentSession):
-        self.session = currentSession.getCurrentHttpSession()
-        self.accountData = currentSession.getCurrentConfig()
+        self.session = currentSession.get_current_http_session()
+        self.account_data = currentSession.get_current_config()
 
-    def getDataOfAllMyBooks(self):
+    def get_my_all_books_data(self):
         """Gets data from all available ebooks"""
         logger.info("Getting data of all your books...")
-        r = self.session.get(self.accountData.my_books_url,
-                             headers=self.accountData.reqHeaders, timeout=10)
+        r = self.session.get(self.account_data.my_books_url,
+                             headers=self.account_data.req_headers, timeout=10)
         if r.status_code is not 200:
-            message = "Cannot open {}, http GET status code != 200".format(self.accountData.my_books_url)
+            message = "Cannot open {}, http GET status code != 200".format(self.account_data.my_books_url)
             logger.error(message)
             raise requests.exceptions.RequestException(message)
-        logger.info("Opened '{}' successfully!".format(self.accountData.my_books_url))
+        logger.info("Opened '{}' successfully!".format(self.account_data.my_books_url))
 
-        myBooksHtml = BeautifulSoup(r.text, 'html.parser')
-        all = myBooksHtml.find(id='product-account-list').find_all('div', {'class': 'product-line unseen'})
-        self.bookData = [{'title': re.sub(r'\s*\[e\w+\]\s*', '', attr['title'], flags=re.I).strip(' '), # remove '[eBook]' from the title
+        my_books_html = BeautifulSoup(r.text, 'html.parser')
+        all = my_books_html.find(id='product-account-list').find_all('div', {'class': 'product-line unseen'})
+        self.book_data = [{'title': re.sub(r'\s*\[e\w+\]\s*', '', attr['title'], flags=re.I).strip(' '), # remove '[eBook]' from the title
                           'id': attr['nid']} for attr in all]
-        for i, div in enumerate(myBooksHtml.find_all('div', {'class': 'product-buttons-line toggle'})):
-            downloadUrls = {}
+        for i, div in enumerate(my_books_html.find_all('div', {'class': 'product-buttons-line toggle'})):
+            download_urls = {}
             for a_href in div.find_all('a'):
                 m = re.match(r'^(/[a-zA-Z]+_download/(\w+)(/(\w+))*)', a_href.get('href'))# extract the download link from href like: "/ebook_download/20892/pdf"
                 if m:
                     if m.group(4) is not None:
-                        downloadUrls[m.group(4)] = m.group(0)
+                        download_urls[m.group(4)] = m.group(0)
                     else:
-                        downloadUrls['code'] = m.group(0)
-            self.bookData[i]['downloadUrls'] = downloadUrls
+                        download_urls['code'] = m.group(0)
+            self.book_data[i]['download_urls'] = download_urls
 
-    def __updateDownloadProgressBar(self, currentWorkDone):
-        """Prints progress bar, currentWorkDone should be float value in range {0.0 - 1.0}, else prints '\n'"""
-        if 0.0 <= currentWorkDone <= 1.0:           
-            print("\r[PROGRESS] - [{0:50s}] {1:.1f}% ".format('#' * int(currentWorkDone * 50), currentWorkDone*100), end="" ,)
-        else:
-            print("")
-
-    def downloadBooks(self, titles=None, formats=None, intoFolder = False):
+    def download_books(self, titles=None, formats=None, into_folder = False):
         """
         Downloads the ebooks.
         :param titles: list('C# tutorial', 'c++ Tutorial') ;
@@ -239,71 +232,78 @@ class BookDownloader(object):
         """
         # download ebook
         if formats is None:
-            formats = self.accountData.downloadFormats
+            formats = self.account_data.download_formats
             if formats is None:
                 formats = ('pdf', 'mobi', 'epub', 'code')
         if titles is not None:
-            tempBookData = [data for data in self.bookData \
-                            if any(PacktAccountDataModel.convertBookTitleToValidString(data['title']) == \
-                            PacktAccountDataModel.convertBookTitleToValidString(title) for title in titles)]
+            temp_book_data = [data for data in self.book_data \
+                            if any(PacktAccountDataModel.convert_book_title_to_valid_string(data['title']) == \
+                            PacktAccountDataModel.convert_book_title_to_valid_string(title) for title in titles)]
         else:# download all
-            tempBookData = self.bookData
-        if len(tempBookData) == 0:
+            temp_book_data = self.book_data
+        if len(temp_book_data) == 0:
             logger.info("There is no books with provided titles: {} at your account!".format(titles))
-        nrOfBooksDownloaded = 0
+        nr_of_books_downloaded = 0
         is_interactive = sys.stdout.isatty()
-        for i, book in enumerate(tempBookData):
+        for i, book in enumerate(temp_book_data):
             for form in formats:
-                if form in list(tempBookData[i]['downloadUrls'].keys()):
+                if form in list(temp_book_data[i]['download_urls'].keys()):
                     if form == 'code':
-                        fileType = 'zip'
+                        file_type = 'zip'
                     else:
-                        fileType = form
-                    title = PacktAccountDataModel.convertBookTitleToValidString(tempBookData[i]['title'])# format valid pathname
+                        file_type = form
+                    title = PacktAccountDataModel.convert_book_title_to_valid_string(temp_book_data[i]['title'])# format valid pathname
                     logger.info("Title: '{}'".format(title))
-                    if intoFolder:
-                        targetDownloadPath = os.path.join(self.accountData.downloadFolderPath, title)
-                        if not os.path.isdir(targetDownloadPath):
-                            os.mkdir(targetDownloadPath)
+                    if into_folder:
+                        target_download_path = os.path.join(self.account_data.download_folder_path, title)
+                        if not os.path.isdir(target_download_path):
+                            os.mkdir(target_download_path)
                     else:
-                        targetDownloadPath = os.path.join(self.accountData.downloadFolderPath)
-                    fullFilePath = os.path.join(targetDownloadPath,
-                                                "{}.{}".format(title, fileType))
-                    if os.path.isfile(fullFilePath):
-                        logger.info("'{}.{}' already exists under the given path".format(title, fileType))
+                        target_download_path = os.path.join(self.account_data.download_folder_path)
+                    full_file_path = os.path.join(target_download_path,
+                                                "{}.{}".format(title, file_type))
+                    if os.path.isfile(full_file_path):
+                        logger.info("'{}.{}' already exists under the given path".format(title, file_type))
                     else:
                         if form == 'code':
                             logger.info("Downloading code for eBook: '{}'...".format(title))
                         else:
                             logger.info("Downloading eBook: '{}' in .{} format...".format(title, form))
                         try:
-                            r = self.session.get(self.accountData.packtpub_url + tempBookData[i]['downloadUrls'][form],
-                                                 headers=self.accountData.reqHeaders, timeout=100,stream=True)
+                            r = self.session.get(self.account_data.packtpub_url + temp_book_data[i]['download_urls'][form],
+                                                 headers=self.account_data.req_headers, timeout=100, stream=True)
                             if r.status_code is 200:
-                                with open(fullFilePath, 'wb') as f:
-                                        totalLength = int(r.headers.get('content-length'))
-                                        numOfChunks = (totalLength/1024) + 1
+                                with open(full_file_path, 'wb') as f:
+                                        total_length = int(r.headers.get('content-length'))
+                                        num_of_chunks = (total_length/1024) + 1
                                         for num, chunk in enumerate(r.iter_content(chunk_size=1024)):
                                             if chunk:
                                                 if is_interactive:
-                                                    self.__updateDownloadProgressBar(num/numOfChunks)
+                                                    self.update_download_progress_bar(num/num_of_chunks)
                                                 f.write(chunk)
                                                 f.flush()
                                         if is_interactive:
-                                            self.__updateDownloadProgressBar(-1)# add end of line
+                                            self.update_download_progress_bar(-1)# add end of line
                                 if form == 'code':
                                     logger.success("Code for eBook: '{}' downloaded successfully!".format(title))
                                 else:
                                     logger.success("eBook: '{}.{}' downloaded successfully!".format(title, form))
-                                nrOfBooksDownloaded += 1
+                                nr_of_books_downloaded += 1
                             else:
                                 message = "Cannot download '{}'".format(title)
                                 logger.error(message)
                                 raise requests.exceptions.RequestException(message)
                         except Exception as e:
                             logger.error(e)
-        logger.info("{} eBooks have been downloaded!".format(str(nrOfBooksDownloaded)))
+        logger.info("{} eBooks have been downloaded!".format(str(nr_of_books_downloaded)))
 
+    @staticmethod
+    def update_download_progress_bar(self, current_work_done):
+        """Prints progress bar, current_work_done should be float value in range {0.0 - 1.0}, else prints '\n'"""
+        if 0.0 <= current_work_done <= 1.0:           
+            print("\r[PROGRESS] - [{0:50s}] {1:.1f}% ".format('#' * int(current_work_done * 50), current_work_done*100), end="" ,)
+        else:
+            print("")
 
 # Main
 if __name__ == '__main__':
@@ -317,7 +317,7 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument("-da", "--dall", help="downloads all ebooks from your account",
                         action="store_true")
-    parser.add_argument("-dc", "--dchosen", help="downloads chosen titles described in [downloadBookTitles] field",
+    parser.add_argument("-dc", "--dchosen", help="downloads chosen titles described in [download_book_titles] field",
                         action="store_true")
     parser.add_argument("-sgd", "--sgd", help="sends the grabbed eBook to google drive",
                         action="store_true")
@@ -327,12 +327,12 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument("-f", "--folder", help="downloads eBook into a folder", default=False,
                         action="store_true")
-    parser.add_argument("--noauth_local_webserver", help="set if you want auth GoogleDrive without local browser",
+    parser.add_argument("--noauth_local_webserver", help="set if you want auth google_drive without local browser",
                         action="store_true")
 
     args = parser.parse_args()
     cfg_file_path = os.path.join(os.getcwd(), "configFile.cfg")
-    intoFolder = args.folder
+    into_folder = args.folder
 
     try:
         session = PacktPubHttpSession(PacktAccountDataModel(cfg_file_path))
@@ -341,7 +341,7 @@ if __name__ == '__main__':
 
         # Grab the newest book
         if args.grab or args.grabl or args.grabd or args.sgd or args.mail:
-            grabber.grabEbook(logEbookInfodata=args.grabl)
+            grabber.grab_ebook(log_ebook_infodata=args.grabl)
 
             # Send email about successful book grab. Do it only when book
             # isn't going to be emailed as we don't want to send email twice.
@@ -351,49 +351,49 @@ if __name__ == '__main__':
                 mb.send_info(
                     subject=SUCCESS_EMAIL_SUBJECT.format(
                         dt.datetime.now().strftime(DATE_FORMAT),
-                        grabber.bookTitle
+                        grabber.book_title
                     ),
-                    body=SUCCESS_EMAIL_BODY.format(grabber.bookTitle)
+                    body=SUCCESS_EMAIL_BODY.format(grabber.book_title)
                 )
 
         # Download book(s) into proper location
         if args.grabd or args.dall or args.dchosen or args.sgd or args.mail:
-            downloader.getDataOfAllMyBooks()
+            downloader.get_my_all_books_data()
             if args.dall:
-                downloader.downloadBooks(intoFolder=intoFolder)
+                downloader.download_books(into_folder=into_folder)
             elif args.dchosen:
-                downloader.downloadBooks(session.getCurrentConfig().downloadBookTitles, intoFolder=intoFolder)
+                downloader.download_books(session.get_current_config().download_book_titles, into_folder=into_folder)
             elif args.grabd:
-                downloader.downloadBooks([grabber.bookTitle], intoFolder=intoFolder)
+                downloader.download_books([grabber.book_title], into_folder=into_folder)
             else:
-                session.getCurrentConfig().downloadFolderPath = os.getcwd()
-                downloader.downloadBooks([grabber.bookTitle], intoFolder=intoFolder)
+                session.get_current_config().download_folder_path = os.getcwd()
+                downloader.download_books([grabber.book_title], into_folder=into_folder)
 
-        # Send downloaded book(s) by mail or to GoogleDrive
+        # Send downloaded book(s) by mail or to google_drive
         if args.sgd or args.mail:
             paths = [
-                os.path.join(session.getCurrentConfig().downloadFolderPath, path)
-                for path in os.listdir(session.getCurrentConfig().downloadFolderPath)
-                if os.path.isfile(path) and grabber.bookTitle in path
+                os.path.join(session.get_current_config().download_folder_path, path)
+                for path in os.listdir(session.get_current_config().download_folder_path)
+                if os.path.isfile(path) and grabber.book_title in path
             ]
             if args.sgd:
-                from utils.googleDrive import GoogleDriveManager
-                googleDrive = GoogleDriveManager(cfg_file_path)
-                googleDrive.send_files(paths)
+                from utils.google_drive import GoogleDriveManager
+                google_drive = GoogleDriveManager(cfg_file_path)
+                google_drive.send_files(paths)
             else:
                 from utils.mail import MailBook
                 mb = MailBook(cfg_file_path)
-                pdfPath = None
-                mobiPath = None
+                pdf_path = None
+                mobi_path = None
                 try:
-                    pdfPath = [path for path in paths if path.endswith('.pdf')][-1]
-                    mobiPath = [path for path in paths if path.endswith('.mobi')][-1]
+                    pdf_path = [path for path in paths if path.endswith('.pdf')][-1]
+                    mobi_path = [path for path in paths if path.endswith('.mobi')][-1]
                 except:
                     pass
-                if pdfPath:
-                    mb.send_book(pdfPath)
-                if mobiPath:
-                    mb.send_kindle(mobiPath)
+                if pdf_path:
+                    mb.send_book(pdf_path)
+                if mobi_path:
+                    mb.send_kindle(mobi_path)
             for path in paths:
                 os.remove(path)
 
