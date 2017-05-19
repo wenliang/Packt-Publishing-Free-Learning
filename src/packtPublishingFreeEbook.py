@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 
 from utils import *
 
-logger = log_manager.get_logger(__name__)
+logger = None
 # downgrading logging level for requests
 logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -327,11 +327,13 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument("-f", "--folder", help="downloads eBook into a folder", default=False,
                         action="store_true")
+    parser.add_argument("-c", "--cfgpath", default=os.getcwd(), help="select folder where config file can be found")
     parser.add_argument("--noauth_local_webserver", help="set if you want auth google_drive without local browser",
                         action="store_true")
 
     args = parser.parse_args()
-    cfg_file_path = os.path.join(os.getcwd(), "configFile.cfg")
+    cfg_file_path = os.path.join(args.cfgpath, "configFile.cfg")
+    logger = log_manager.get_logger(__name__, args.cfgpath)
     into_folder = args.folder
 
     try:

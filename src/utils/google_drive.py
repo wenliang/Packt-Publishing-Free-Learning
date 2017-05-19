@@ -36,12 +36,13 @@ class GoogleDriveManager():
         self._mimetypes = {'pdf':'application/pdf', 'zip':'application/zip', 'mobi':'application/x-mobipocket-ebook', 'epub':'application/epub+zip'}
         # downgrading logging level for google api
         logging.getLogger("apiclient").setLevel(logging.WARNING)
-
+        
     def _set_config_data(self, cfg_file_path):
         """Sets all the config data for Google drive manager"""
         configuration = configparser.ConfigParser()
         if not configuration.read(cfg_file_path):
             raise configparser.Error('{} file not found'.format(cfg_file_path))
+        self.cfg_file_path = cfg_file_path
         self.app_name = configuration.get("GOOGLE_DRIVE_DATA", 'gd_app_name')
         self.folder_name = configuration.get("GOOGLE_DRIVE_DATA", 'gd_folder_name')
 
@@ -51,7 +52,7 @@ class GoogleDriveManager():
         the OAuth2 flow is completed to obtain the new credentials.
         Returns: the obtained credentials.
         '''
-        home_dir = os.getcwd()
+        home_dir = self.cfg_file_path
         credential_dir = os.path.join(home_dir, '.credentials')
         if not os.path.exists(credential_dir):
             os.makedirs(credential_dir)

@@ -9,7 +9,7 @@ from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
 
 from utils import *
-logger = log_manager.get_logger(__name__)
+logger = log_manager.get_logger(__name__) 
 
 
 ####################################-SENDING EMAILS CONTAINING EBOOK-############################################
@@ -19,10 +19,10 @@ DEFAULT_SUBJECT = "New free packt ebook"
 
 class MailBook:
 
-    def __init__(self, cfgFilePath):
-        my_defaults = {'fromEmail': None,'toEmails': [],'kindleEmails': None, }
+    def __init__(self, cfg_file_path):
+        my_defaults = {'from_email': None,'to_emails': [],'kindle_emails': None, }
         config = configparser.ConfigParser(defaults=my_defaults)
-        config.read(cfgFilePath)
+        config.read(cfg_file_path)
         try:
             self._smtp_host = config.get("MAIL", 'host')
             self._smtp_port = config.get("MAIL", 'port')
@@ -32,7 +32,7 @@ class MailBook:
             self._kindle_emails = config.get("MAIL", 'kindle_emails').split(COMMA)
         except configparser.NoSectionError:
             raise ValueError("ERROR: need at least one from and one or more to emails")
-    
+        
     def _create_email_msg(self, to=None, subject=None, body=None):
         msg = MIMEMultipart()
         msg['From'] = self._send_from
