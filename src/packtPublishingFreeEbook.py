@@ -8,6 +8,7 @@ import re
 import sys
 import time
 from collections import OrderedDict
+import datetime as dt
 
 import requests
 from bs4 import BeautifulSoup
@@ -18,19 +19,26 @@ logger = log_manager.get_logger(__name__)
 # downgrading logging level for requests
 logging.getLogger("requests").setLevel(logging.WARNING)
 
+DATE_FORMAT = "%Y/%m/%d"
+
+SUCCESS_EMAIL_SUBJECT = "{} New free Packt ebook: \"{}\""
+SUCCESS_EMAIL_BODY = "A new free Packt ebook \"{}\" was successfully grabbed. Enjoy!"
+FAILURE_EMAIL_SUBJECT = "{} Grabbing a new free Packt ebook failed"
+FAILURE_EMAIL_BODY = "Today's free Packt ebook grabbing has failed with exception: {}!\n\nCheck this out!"
+
 
 class PacktAccountDataModel(object):
     """Contains all needed urls, passwords and packtpub account data stored in .cfg file"""
 
-    def __init__(self, cfgFilePath):
-        self.cfgFilePath = cfgFilePath
+    def __init__(self, cfg_file_path):
+        self.cfg_file_path = cfg_file_path
         self.configuration = configparser.ConfigParser()
-        if not self.configuration.read(self.cfgFilePath):
-            raise configparser.Error('{} file not found'.format(self.cfgFilePath))
-        self.bookInfoDataLogFile = self.__getConfigEbookExtraInfoLogFilename()
-        self.packtPubUrl = "https://www.packtpub.com"
-        self.myBooksUrl = "https://www.packtpub.com/account/my-ebooks"
-        self.loginUrl = "https://www.packtpub.com/register"
+        if not self.configuration.read(self.cfg_file_path):
+            raise configparser.Error('{} file not found'.format(self.cfg_file_path))
+        self.book_infodata_log_file = self.__getConfigEbookExtraInfoLogFilename()
+        self.packtpub_url = "https://www.packtpub.com"
+        self.my_books_url = "https://www.packtpub.com/account/my-ebooks"
+        self.login_url = "https://www.packtpub.com/register"
         self.freeLearningUrl = "https://www.packtpub.com/packt/offers/free-learning"
         self.reqHeaders = {'Connection': 'keep-alive',
                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 '
@@ -96,15 +104,15 @@ class PacktPubHttpSession(object):
                     'form_id': 'packt_user_login_form'}
         # to get form_build_id
         logger.info("Creating session...")
-        rGet = requests.get(self.accountConfig.loginUrl, headers=self.accountConfig.reqHeaders, timeout=10)
+        rGet = requests.get(self.accountConfig.login_url, headers=self.accountConfig.reqHeaders, timeout=10)
         content = BeautifulSoup(str(rGet.content), 'html.parser')
         formBuildId = [element['value'] for element in
                        content.find(id='packt-user-login-form').find_all('input', {'name': 'form_build_id'})]
         formData['form_build_id'] = formBuildId[0]
         session = requests.Session()
-        rPost = session.post(self.accountConfig.loginUrl, headers=self.accountConfig.reqHeaders, data=formData)
+        rPost = session.post(self.accountConfig.login_url, headers=self.accountConfig.reqHeaders, data=formData)
         #check once again if we are really logged into the server
-        rGet = session.get(self.accountConfig.myBooksUrl, headers=self.accountConfig.reqHeaders, timeout=10)
+        rGet = session.get(self.accountConfig.my_books_url, headers=self.accountConfig.reqHeaders, timeout=10)
         if rPost.status_code is not 200 or rGet.text.find("register-page-form") != -1:
             message = "Login failed!"
             logger.error(message)
@@ -126,7 +134,7 @@ class BookGrabber(object):
         Write result to file
         :param data: the data to be written down
         """
-        with open(self.accountData.bookInfoDataLogFile, "a") as output:
+        with open(self.accountData.book_infodata_log_file, "a") as output:
             output.write('\n')
             for key, value in data.items():
                 output.write('{} --> {}\n'.format(key.upper(), value))
@@ -144,7 +152,7 @@ class BookGrabber(object):
         resultHtml = BeautifulSoup(r.text, 'html.parser')
         lastGrabbedBook = resultHtml.find('div', {'class': 'dotd-main-book-image'})
         bookUrl = lastGrabbedBook.find('a').attrs['href']
-        bookPage = self.session.get(self.accountData.packtPubUrl + bookUrl,
+        bookPage = self.session.get(self.accountData.packtpub_url + bookUrl,
                                     headers=self.accountData.reqHeaders, timeout=10).text
         page = BeautifulSoup(bookPage, 'html.parser')
 
@@ -155,7 +163,7 @@ class BookGrabber(object):
         resultData["author"] = author.text.strip().split("\n")[0]
         resultData["date_published"] = page.find('time').text
         codeDownloadUrl = page.find('div', {'class': 'book-top-block-code'}).find('a').attrs['href']
-        resultData["code_files_url"] = self.accountData.packtPubUrl + codeDownloadUrl
+        resultData["code_files_url"] = self.accountData.packtpub_url + codeDownloadUrl
         resultData["downloaded_at"] = time.strftime("%d-%m-%Y %H:%M")
         logger.success("Info data retrieved for '{}'".format(self.bookTitle))
         self.__writeEbookInfoData(resultData)
@@ -171,7 +179,7 @@ class BookGrabber(object):
         html = BeautifulSoup(r.text, 'html.parser')
         claimUrl = html.find(attrs={'class': 'twelve-days-claim'})['href']
         self.bookTitle = PacktAccountDataModel.convertBookTitleToValidString(html.find('div', {'class': 'dotd-title'}).find('h2').next_element)
-        r = self.session.get(self.accountData.packtPubUrl + claimUrl,
+        r = self.session.get(self.accountData.packtpub_url + claimUrl,
                              headers=self.accountData.reqHeaders, timeout=10)
         if r.status_code is 200 and r.text.find('My eBooks') != -1:
             logger.success("eBook: '{}' has been successfully grabbed!".format(self.bookTitle))
@@ -193,13 +201,13 @@ class BookDownloader(object):
     def getDataOfAllMyBooks(self):
         """Gets data from all available ebooks"""
         logger.info("Getting data of all your books...")
-        r = self.session.get(self.accountData.myBooksUrl,
+        r = self.session.get(self.accountData.my_books_url,
                              headers=self.accountData.reqHeaders, timeout=10)
         if r.status_code is not 200:
-            message = "Cannot open {}, http GET status code != 200".format(self.accountData.myBooksUrl)
+            message = "Cannot open {}, http GET status code != 200".format(self.accountData.my_books_url)
             logger.error(message)
             raise requests.exceptions.RequestException(message)
-        logger.info("Opened '{}' successfully!".format(self.accountData.myBooksUrl))
+        logger.info("Opened '{}' successfully!".format(self.accountData.my_books_url))
 
         myBooksHtml = BeautifulSoup(r.text, 'html.parser')
         all = myBooksHtml.find(id='product-account-list').find_all('div', {'class': 'product-line unseen'})
@@ -269,7 +277,7 @@ class BookDownloader(object):
                         else:
                             logger.info("Downloading eBook: '{}' in .{} format...".format(title, form))
                         try:
-                            r = self.session.get(self.accountData.packtPubUrl + tempBookData[i]['downloadUrls'][form],
+                            r = self.session.get(self.accountData.packtpub_url + tempBookData[i]['downloadUrls'][form],
                                                  headers=self.accountData.reqHeaders, timeout=100,stream=True)
                             if r.status_code is 200:
                                 with open(fullFilePath, 'wb') as f:
@@ -315,7 +323,7 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument("-m", "--mail", help="send download to emails defined in config file", default=False,
                         action="store_true")
-    parser.add_argument("-rm", "--report_mail", help="send fail report email when script somehow failed", default=False,
+    parser.add_argument("-sm", "--status_mail", help="send fail report email when script somehow failed", default=False,
                         action="store_true")
     parser.add_argument("-f", "--folder", help="downloads eBook into a folder", default=False,
                         action="store_true")
@@ -323,63 +331,79 @@ if __name__ == '__main__':
                         action="store_true")
 
     args = parser.parse_args()
-    cfgFilePath = os.path.join(os.getcwd(), "configFile.cfg")
+    cfg_file_path = os.path.join(os.getcwd(), "configFile.cfg")
+    intoFolder = args.folder
 
     try:
-        session = PacktPubHttpSession(PacktAccountDataModel(cfgFilePath))
+        session = PacktPubHttpSession(PacktAccountDataModel(cfg_file_path))
         grabber = BookGrabber(session)
         downloader = BookDownloader(session)
-        if args.sgd:
-            from utils.googleDrive import GoogleDriveManager
-            googleDrive= GoogleDriveManager(cfgFilePath)
 
+        # Grab the newest book
         if args.grab or args.grabl or args.grabd or args.sgd or args.mail:
-            if not args.grabl:
-                grabber.grabEbook()
-            else:
-                grabber.grabEbook(logEbookInfodata=True)
+            grabber.grabEbook(logEbookInfodata=args.grabl)
 
+            # Send email about successful book grab. Do it only when book
+            # isn't going to be emailed as we don't want to send email twice.
+            if args.status_mail and not args.mail:
+                from utils.mail import MailBook
+                mb = MailBook(cfg_file_path)
+                mb.send_info(
+                    subject=SUCCESS_EMAIL_SUBJECT.format(
+                        dt.datetime.now().strftime(DATE_FORMAT),
+                        grabber.bookTitle
+                    ),
+                    body=SUCCESS_EMAIL_BODY.format(grabber.bookTitle)
+                )
+
+        # Download book(s) into proper location
         if args.grabd or args.dall or args.dchosen or args.sgd or args.mail:
             downloader.getDataOfAllMyBooks()
-        intoFolder = False
-        if args.folder:
-            intoFolder = True
-        if args.grabd or args.sgd or args.mail:
-            if args.sgd or args.mail:
-                session.getCurrentConfig().downloadFolderPath=os.getcwd()
-            downloader.downloadBooks([grabber.bookTitle], intoFolder=intoFolder)
-            if args.sgd or args.mail:
-                paths = [os.path.join(session.getCurrentConfig().downloadFolderPath, path) \
-                        for path in os.listdir(session.getCurrentConfig().downloadFolderPath) \
-                            if os.path.isfile(path) and path.find(grabber.bookTitle) is not -1]
+            if args.dall:
+                downloader.downloadBooks(intoFolder=intoFolder)
+            elif args.dchosen:
+                downloader.downloadBooks(session.getCurrentConfig().downloadBookTitles, intoFolder=intoFolder)
+            elif args.grabd:
+                downloader.downloadBooks([grabber.bookTitle], intoFolder=intoFolder)
+            else:
+                session.getCurrentConfig().downloadFolderPath = os.getcwd()
+                downloader.downloadBooks([grabber.bookTitle], intoFolder=intoFolder)
+
+        # Send downloaded book(s) by mail or to GoogleDrive
+        if args.sgd or args.mail:
+            paths = [
+                os.path.join(session.getCurrentConfig().downloadFolderPath, path)
+                for path in os.listdir(session.getCurrentConfig().downloadFolderPath)
+                if os.path.isfile(path) and grabber.bookTitle in path
+            ]
             if args.sgd:
+                from utils.googleDrive import GoogleDriveManager
+                googleDrive = GoogleDriveManager(cfg_file_path)
                 googleDrive.send_files(paths)
-            elif args.mail:
+            else:
                 from utils.mail import MailBook
-                mb = MailBook(cfgFilePath)
+                mb = MailBook(cfg_file_path)
                 pdfPath = None
                 mobiPath = None
                 try:
-                    pdfPath = [path for path in paths if path.split('.')[-1] == 'pdf'][-1]
-                    mobiPath = [path for path in paths if path.split('.')[-1] == 'mobi'][-1]
+                    pdfPath = [path for path in paths if path.endswith('.pdf')][-1]
+                    mobiPath = [path for path in paths if path.endswith('.mobi')][-1]
                 except:
                     pass
                 if pdfPath:
                     mb.send_book(pdfPath)
                 if mobiPath:
                     mb.send_kindle(mobiPath)
-            if args.sgd or args.mail:
-                [os.remove(path) for path in paths]
+            for path in paths:
+                os.remove(path)
 
-        elif args.dall:
-            downloader.downloadBooks(intoFolder=intoFolder)
-
-        elif args.dchosen:
-            downloader.downloadBooks(session.getCurrentConfig().downloadBookTitles, intoFolder=intoFolder)
         logger.success("Good, looks like all went well! :-)")
     except Exception as e:
         logger.error("Exception occurred {}".format(e))
-        if args.report_mail:
+        if args.status_mail:
             from utils.mail import MailBook
-            mb = MailBook(cfgFilePath)
-            mb.send_info(body="Today's book grabbing has failed with exception: {}!\n Check this out!".format(str(e)))            
+            mb = MailBook(cfg_file_path)
+            mb.send_info(
+                subject=FAILURE_EMAIL_SUBJECT.format(dt.datetime.now().strftime(DATE_FORMAT)),
+                body=FAILURE_EMAIL_BODY.format(str(e))
+            )
