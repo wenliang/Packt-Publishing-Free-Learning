@@ -197,6 +197,7 @@ class BookDownloader(object):
     def __init__(self, currentSession):
         self.session = currentSession.get_current_http_session()
         self.account_data = currentSession.get_current_config()
+        self.download_formats = ('pdf', 'mobi', 'epub', 'code')
 
     def get_my_all_books_data(self):
         """Gets data from all available ebooks"""
@@ -209,20 +210,20 @@ class BookDownloader(object):
             raise requests.exceptions.RequestException(message)
         logger.info("Opened '{}' successfully!".format(self.account_data.my_books_url))
 
+        self.book_data = []
         my_books_html = BeautifulSoup(r.text, 'html.parser')
-        all = my_books_html.find(id='product-account-list').find_all('div', {'class': 'product-line unseen'})
-        self.book_data = [{'title': re.sub(r'\s*\[e\w+\]\s*', '', attr['title'], flags=re.I).strip(' '), # remove '[eBook]' from the title
-                          'id': attr['nid']} for attr in all]
-        for i, div in enumerate(my_books_html.find_all('div', {'class': 'product-buttons-line toggle'})):
+        all = my_books_html.find_all('div', {'class': 'product-line'})
+        for line in all:
+            if not line.get('nid'):
+                continue
+            title = line.find('div', {'class': 'title'}).getText().strip(' ').replace(' [eBook]', '')# remove '[eBook]' from the title
             download_urls = {}
-            for a_href in div.find_all('a'):
-                m = re.match(r'^(/[a-zA-Z]+_download/(\w+)(/(\w+))*)', a_href.get('href'))# extract the download link from href like: "/ebook_download/20892/pdf"
-                if m:
-                    if m.group(4) is not None:
-                        download_urls[m.group(4)] = m.group(0)
-                    else:
-                        download_urls['code'] = m.group(0)
-            self.book_data[i]['download_urls'] = download_urls
+            for a in line.find_all('a'):
+                url = a.get('href')
+                for fm in self.download_formats:
+                    if url.find(fm) != -1:
+                        download_urls[fm] = url
+            self.book_data.append({'title':title, 'download_urls':download_urls})
 
     def download_books(self, titles=None, formats=None, into_folder = False):
         """
@@ -234,7 +235,7 @@ class BookDownloader(object):
         if formats is None:
             formats = self.account_data.download_formats
             if formats is None:
-                formats = ('pdf', 'mobi', 'epub', 'code')
+                formats = self.download_formats
         if titles is not None:
             temp_book_data = [data for data in self.book_data \
                             if any(PacktAccountDataModel.convert_book_title_to_valid_string(data['title']) == \
