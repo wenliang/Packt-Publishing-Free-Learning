@@ -37,7 +37,7 @@
   python packtPublishingFreeEbook.py -gl
   ```
 
-  - Option *-gd* [--grabd] - claims (grabs) a daily ebook and downloads the title afterwards to the location specified under *[downloadFolderPath]* field (configFile.cfg file)
+  - Option *-gd* [--grabd] - claims (grabs) a daily ebook and downloads the title afterwards to the location specified under *[download_folder_path]* field (configFile.cfg file)
   ```
   python packtPublishingFreeEbook.py -gd
   ```
@@ -47,7 +47,7 @@
   python packtPublishingFreeEbook.py -da
   ```
   
-  - Option *-dc* [--dchosen] - downloads chosen titles specified under *[downloadBookTitles]* field in *configFile.cfg*
+  - Option *-dc* [--dchosen] - downloads chosen titles specified under *[download_book_titles]* field in *configFile.cfg*
   ```
   python packtPublishingFreeEbook.py -dc
   ```
@@ -70,6 +70,11 @@
   - SubOption *-f* [--folder] - downloads an ebook into a created folder, named as ebook's title
   ```
   python packtPublishingFreeEbook.py -gd -f
+  ```
+  
+  - SubOption *-c* [--cfgpath] - selects folder where config file can be found (default: cwd)
+  ```
+  python packtPublishingFreeEbook.py -gd -c /home/usr/
   ```
   
 2. You can set the script to be invoked automatically:
@@ -140,23 +145,23 @@
 
 * EXAMPLE: download **'Unity 4.x Game AI Programming'** and  **'Multithreading in C# 5.0 Cookbook'** books in all available formats  (pdf, epub, mobi) with zipped source code file from your packt account
   
-  To download chosen titles from your account, you must put them into **downloadBookTitles** in **configFile.cfg** as shown below:
+  To download chosen titles from your account, you must put them into **download_book_titles** in **configFile.cfg** as shown below:
   
   **configFile.cfg** example:
   ```
     [LOGIN_DATA]
-    email= youremail@youremail.com
-    password= yourpassword    
+    email: youremail@youremail.com
+    email: yourpassword    
     
     [DOWNLOAD_DATA]
-    downloadFolderPath: C:\Users\me\Desktop\myEbooksFromPackt
-    downloadFormats: pdf, epub, mobi, code
-    downloadBookTitles: Unity 4.x Game AI Programming , Multithreading in C# 5.0 Cookbook
-    logFile: logfile.log
+    download_folder_path: C:\Users\me\Desktop\myEbooksFromPackt
+    download_formats: pdf, epub, mobi, code
+    download_book_titles: Unity 4.x Game AI Programming , Multithreading in C# 5.0 Cookbook
+    ebook_extra_info_log_file_path: eBookMetadata.log
     
     [GOOGLE_DRIVE_DATA]
-    gdAppName: GoogleDriveManager
-    gdFolderName: PACKT_EBOOKS
+    gd_app_name: GoogleDriveManager
+    gd_folder_name: PACKT_EBOOKS
   ```
   run:
   ```

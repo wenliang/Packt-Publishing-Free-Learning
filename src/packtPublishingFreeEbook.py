@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 
 from utils import *
 
-logger = None
+logger = log_manager.get_logger(__name__)
 # downgrading logging level for requests
 logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -32,6 +32,7 @@ class PacktAccountDataModel(object):
 
     def __init__(self, cfg_file_path):
         self.cfg_file_path = cfg_file_path
+        self.cfg_folder_path = os.path.dirname(cfg_file_path)
         self.configuration = configparser.ConfigParser()
         if not self.configuration.read(self.cfg_file_path):
             raise configparser.Error('{} file not found'.format(self.cfg_file_path))
@@ -134,7 +135,7 @@ class BookGrabber(object):
         Write result to file
         :param data: the data to be written down
         """
-        with open(self.account_data.book_infodata_log_file, "a") as output:
+        with open(os.path.join(self.account_data.cfg_folder_path, self.account_data.book_infodata_log_file), "a") as output:
             output.write('\n')
             for key, value in data.items():
                 output.write('{} --> {}\n'.format(key.upper(), value))
@@ -334,7 +335,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     cfg_file_path = os.path.join(args.cfgpath, "configFile.cfg")
-    logger = log_manager.get_logger(__name__, args.cfgpath)
     into_folder = args.folder
 
     try:
