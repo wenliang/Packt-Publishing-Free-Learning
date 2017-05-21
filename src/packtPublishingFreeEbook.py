@@ -281,11 +281,11 @@ class BookDownloader(object):
                                         for num, chunk in enumerate(r.iter_content(chunk_size=1024)):
                                             if chunk:
                                                 if is_interactive:
-                                                    self.update_download_progress_bar(num/num_of_chunks)
+                                                    BookDownloader.update_download_progress_bar(num/num_of_chunks)
                                                 f.write(chunk)
                                                 f.flush()
                                         if is_interactive:
-                                            self.update_download_progress_bar(-1)# add end of line
+                                            BookDownloader.update_download_progress_bar(-1)# add end of line
                                 if form == 'code':
                                     logger.success("Code for eBook: '{}' downloaded successfully!".format(title))
                                 else:
@@ -300,7 +300,7 @@ class BookDownloader(object):
         logger.info("{} eBooks have been downloaded!".format(str(nr_of_books_downloaded)))
 
     @staticmethod
-    def update_download_progress_bar(self, current_work_done):
+    def update_download_progress_bar(current_work_done):
         """Prints progress bar, current_work_done should be float value in range {0.0 - 1.0}, else prints '\n'"""
         if 0.0 <= current_work_done <= 1.0:           
             print("\r[PROGRESS] - [{0:50s}] {1:.1f}% ".format('#' * int(current_work_done * 50), current_work_done*100), end="" ,)
