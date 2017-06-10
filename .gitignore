@@ -1,2 +1,3 @@
 configFile.cfg
 wrapper.sh
+*.pyc
