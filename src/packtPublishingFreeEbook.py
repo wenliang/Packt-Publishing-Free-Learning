@@ -183,7 +183,7 @@ class BookGrabber(object):
         start = time.time()
         job.join()
         end = time.time()
-        logger.info("Taks finished in %.2f second".format(end - start))
+        logger.info("Taks finished in {:.2f} second".format(end - start))
         return job.get_solution_response()
 
     def grab_ebook(self, log_ebook_infodata=False):
