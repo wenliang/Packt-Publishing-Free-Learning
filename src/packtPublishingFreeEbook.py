@@ -176,7 +176,7 @@ class BookGrabber(object):
     def solve_captcha(self, url, html):
         key_pattern = re.compile("Packt.offers.onLoadRecaptcha\(\'(.+?)\'\)")
         site_key = key_pattern.search(html.find(text=key_pattern)).group(1)
-        client = AnticaptchaClient(self.session.account_data.anticaptcha_clientkey)
+        client = AnticaptchaClient(self.account_data.anticaptcha_clientkey)
         task = NoCaptchaTaskProxylessTask(url, site_key)
         job = client.createTask(task)
         logger.info("Task ID {} created. Waiting to finish.".format(job.task_id))
