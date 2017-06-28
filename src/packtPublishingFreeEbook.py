@@ -196,11 +196,11 @@ class BookGrabber(object):
             raise requests.exceptions.RequestException("http GET status code != 200")
         html = BeautifulSoup(r.text, 'html.parser')
         if 'href' not in html.find(attrs={'class': 'twelve-days-claim'}):
-            logger.info("Captcha detected. Trying to solve it using Anti-captcha.com. ")
-            r = self.grab_ebook_captchafull(url, html)
+            logger.info("Captcha detected. Trying to solve it using Anti-captcha.com.")
+            r = self.claim_ebook_captchafull(url, html)
         else:
             logger.info("No captcha detected.")
-            r = self.grab_ebook_captchaless(url, html)
+            r = self.claim_ebook_captchaless(url, html)
         self.book_title = PacktAccountDataModel.convert_book_title_to_valid_string(
             html.find('div', {'class': 'dotd-title'}).find('h2').next_element)
         if r.status_code is 200 and r.text.find('My eBooks') != -1:
@@ -212,12 +212,12 @@ class BookGrabber(object):
             logger.error(message)
             raise requests.exceptions.RequestException(message)
 
-    def grab_ebook_captchaless(self, url, html):
+    def claim_ebook_captchaless(self, url, html):
         claim_url = html.find(attrs={'class': 'twelve-days-claim'})['href']
         return self.session.get(self.account_data.packtpub_url + claim_url,
                                 headers=self.account_data.req_headers, timeout=10)
 
-    def grab_ebook_captchafull(self, url, html):
+    def claim_ebook_captchafull(self, url, html):
         claim_url = html.select_one('.free-ebook form')['action']
         return self.session.post(self.account_data.packtpub_url + claim_url,
                                  headers=self.account_data.req_headers,
