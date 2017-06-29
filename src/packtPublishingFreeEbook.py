@@ -12,10 +12,9 @@ import datetime as dt
 
 import requests
 from bs4 import BeautifulSoup
+from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask
 
 from utils import *
-from utils import anticaptcha
-from utils.anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask
 
 logger = log_manager.get_logger(__name__)
 # downgrading logging level for requests
