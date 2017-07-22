@@ -5,6 +5,7 @@ import argparse
 import datetime as dt
 import os
 import re
+import sys
 import time
 from collections import OrderedDict
 import configparser
@@ -422,3 +423,4 @@ if __name__ == '__main__':
                 subject=FAILURE_EMAIL_SUBJECT.format(dt.datetime.now().strftime(DATE_FORMAT)),
                 body=FAILURE_EMAIL_BODY.format(str(e))
             )
+        sys.exit(2)
