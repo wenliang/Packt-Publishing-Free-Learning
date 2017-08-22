@@ -23,7 +23,7 @@ The script uses [anti-captcha.com](http://getcaptchasolution.com/ewfhjk64ll) ser
 
 * change a name of **configFileTemplate.cfg** to **configFile.cfg**  
 * change your login credentials in **configFile.cfg** file
-* register on [Anticaptcha.com](http://getcaptchasolution.com/ewfhjk64ll), grab API key and put in **configFile.cfg**
+* register on [anti-captcha.com](http://getcaptchasolution.com/ewfhjk64ll), grab API key and put in **configFile.cfg**
 
 ### Usage:
 1. The script **[packtPublishingFreeEbook.py]** might be fired up with one of 7 arguments:
