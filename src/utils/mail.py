@@ -9,42 +9,44 @@ from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
 
 from utils import *
-logger = log_manager.get_logger(__name__) 
+logger = log_manager.get_logger(__name__)
 
 
-####################################-SENDING EMAILS CONTAINING EBOOK-############################################
 COMMA = ", "
 DEFAULT_BODY = "Enjoy!"
 DEFAULT_SUBJECT = "New free packt ebook"
 
+
 class MailBook:
 
     def __init__(self, cfg_file_path):
-        my_defaults = {'from_email': None,'to_emails': [],'kindle_emails': None, }
-        config = configparser.ConfigParser(defaults=my_defaults)
+        defaults = {'from_email': None, 'to_emails': [], 'kindle_emails': []}
+        config = configparser.ConfigParser(defaults=defaults)
         config.read(cfg_file_path)
         try:
             self._smtp_host = config.get("MAIL", 'host')
             self._smtp_port = config.get("MAIL", 'port')
             self._email_pass = config.get("MAIL", 'password')
             self._send_from = config.get("MAIL", 'email')
-            self._to_emails = config.get("MAIL", 'to_emails').split(COMMA)
-            self._kindle_emails = config.get("MAIL", 'kindle_emails').split(COMMA)
+            self._to_emails = list(filter(None, (config.get("MAIL", 'to_emails') or '').split(COMMA)))
+            self._kindle_emails = list(filter(None, (config.get("MAIL", 'kindle_emails') or '').split(COMMA)))
         except configparser.NoSectionError:
-            raise ValueError("ERROR: need at least one from and one or more to emails")
-        
+            raise ValueError("ERROR: need at least one from and one or more to emails.")
+
     def _create_email_msg(self, to=None, subject=None, body=None):
+        self._to_emails = to or self._to_emails
+        if not self._to_emails:
+            raise ValueError("ERROR: no email adress to send the message to was provided.")
+
         msg = MIMEMultipart()
         msg['From'] = self._send_from
-        if to:
-            self._to_emails = to
         msg['To'] = COMMASPACE.join(self._to_emails)
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = subject
         body = body if body else DEFAULT_BODY
-        msg.attach(MIMEText(body))   
+        msg.attach(MIMEText(body))
         return msg
-    
+
     def _send_email(self, msg):
         try:
             smtp = smtplib.SMTP(host=self._smtp_host, port=int(self._smtp_port))
@@ -59,11 +61,11 @@ class MailBook:
             logger.error('Sending failed with an error: {}'.format(str(e)))
         finally:
             smtp.quit()
-    
+
     def send_info(self, subject="Info message from packtPublishingFreeEbook.py script", body=None):
         msg = self._create_email_msg(subject=subject, body=body)
         self._send_email(msg)
-    
+
     def send_book(self, book, to=None):
         if not os.path.isfile(book):
             raise ValueError("ERROR: {} file doesn't exist.".format(book))
@@ -83,5 +85,4 @@ class MailBook:
     def send_kindle(self, book):
         if not self._kindle_emails:
             return
-        self.send_book(book, to=self._kindle_emails) 
-
+        self.send_book(book, to=self._kindle_emails)
