@@ -3,7 +3,7 @@
 **packtPublishingFreeEbook.py** - script that automatically grabs and download a daily free eBook from https://www.packtpub.com/packt/offers/free-learning
   You can use it also to download the already claimed eBooks from your account https://www.packtpub.com/account/my-ebooks
 
-The script uses [Anticaptcha.com](http://getcaptchasolution.com/ewfhjk64ll) to bypass the Recaptcha captcha to function fully automatically. Anticaptcha.com employs people to solve captcha test use whether or not the user is human. The service costs about $ 2 per thousand captcha test, allowing you to operate for a few dollars over the years.
+The script uses [anti-captcha.com](http://getcaptchasolution.com/ewfhjk64ll) service to bypass the Recaptcha captcha to function fully automatically. Anticaptcha.com employs people to solve captcha test use whether or not the user is human. The service costs about $ 2 per thousand captcha test, allowing you to operate for a few dollars over the years.
 
 ### Requirements:
 * Install either Python 2.x or 3.x
