@@ -10,6 +10,7 @@ from collections import OrderedDict
 import configparser
 import requests
 from bs4 import BeautifulSoup
+from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask
 
 from utils import *
 
@@ -35,6 +36,7 @@ class PacktAccountDataModel(object):
         if not self.configuration.read(self.cfg_file_path):
             raise configparser.Error('{} file not found'.format(self.cfg_file_path))
         self.book_infodata_log_file = self._get_config_ebook_extrainfo_log_filename()
+        self.anticaptcha_clientkey = self.configuration.get("ANTICAPTCHA_DATA", 'key')
         self.packtpub_url = "https://www.packtpub.com"
         self.my_books_url = "https://www.packtpub.com/account/my-ebooks"
         self.login_url = "https://www.packtpub.com/register"
@@ -170,18 +172,36 @@ class BookGrabber(object):
         self._write_ebook_infodata(result_data)
         return result_data
 
-    def grab_ebook(self, log_ebook_infodata = False):
+    def solve_captcha(self, url, html):
+        key_pattern = re.compile("Packt.offers.onLoadRecaptcha\(\'(.+?)\'\)")
+        site_key = key_pattern.search(html.find(text=key_pattern)).group(1)
+        client = AnticaptchaClient(self.account_data.anticaptcha_clientkey)
+        task = NoCaptchaTaskProxylessTask(url, site_key)
+        job = client.createTask(task)
+        logger.info("Task ID {} created. Waiting to finish.".format(job.task_id))
+        start = time.time()
+        job.join()
+        end = time.time()
+        logger.info("Taks finished in {:.2f} second".format(end - start))
+        return job.get_solution_response()
+
+    def grab_ebook(self, log_ebook_infodata=False):
         """Grabs the ebook"""
         logger.info("Start grabbing eBook...")
+        url = self.account_data.freelearning_url
         r = self.session.get(self.account_data.freelearning_url,
                              headers=self.account_data.req_headers, timeout=10)
         if r.status_code is not 200:
             raise requests.exceptions.RequestException("http GET status code != 200")
         html = BeautifulSoup(r.text, 'html.parser')
-        claim_url = html.find(attrs={'class': 'twelve-days-claim'})['href']
-        self.book_title = PacktAccountDataModel.convert_book_title_to_valid_string(html.find('div', {'class': 'dotd-title'}).find('h2').next_element)
-        r = self.session.get(self.account_data.packtpub_url + claim_url,
-                             headers=self.account_data.req_headers, timeout=10)
+        if 'href' not in html.find(attrs={'class': 'twelve-days-claim'}):
+            logger.info("Captcha detected. Trying to solve it using Anti-captcha.com.")
+            r = self.claim_ebook_captchafull(url, html)
+        else:
+            logger.info("No captcha detected.")
+            r = self.claim_ebook_captchaless(url, html)
+        self.book_title = PacktAccountDataModel.convert_book_title_to_valid_string(
+            html.find('div', {'class': 'dotd-title'}).find('h2').next_element)
         if r.status_code is 200 and r.text.find('My eBooks') != -1:
             logger.success("eBook: '{}' has been successfully grabbed!".format(self.book_title))
             if log_ebook_infodata:
@@ -191,6 +211,18 @@ class BookGrabber(object):
                 self.book_title)
             logger.error(message)
             raise requests.exceptions.RequestException(message)
+
+    def claim_ebook_captchaless(self, url, html):
+        claim_url = html.find(attrs={'class': 'twelve-days-claim'})['href']
+        return self.session.get(self.account_data.packtpub_url + claim_url,
+                                headers=self.account_data.req_headers, timeout=10)
+
+    def claim_ebook_captchafull(self, url, html):
+        claim_url = html.select_one('.free-ebook form')['action']
+        return self.session.post(self.account_data.packtpub_url + claim_url,
+                                 headers=self.account_data.req_headers,
+                                 timeout=10,
+                                 data={'g-recaptcha-response': self.solve_captcha(url, html)})
 
 
 class BookDownloader(object):
