@@ -5,8 +5,6 @@ import os
 import sys
 
 
-
-
 def get_logger(module_name, log_folder_path=os.getcwd()):
     """ 
         module_name just to distinguish where the logs come from

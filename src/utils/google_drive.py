@@ -1,6 +1,4 @@
-#!/usr/bin/env python
 import sys
-import requests
 import os
 import configparser
 import argparse
@@ -9,13 +7,13 @@ import io
 import oauth2client
 from oauth2client import client
 from oauth2client import tools
-import apiclient
 from apiclient import discovery
 from apiclient.http import MediaFileUpload
 from apiclient.http import MediaIoBaseDownload
 
-from utils import *
-logger = log_manager.get_logger(__name__)
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 ####################################-GOOGLE DRIVE MANAGER############################################
 
@@ -63,7 +61,6 @@ class GoogleDriveManager():
             flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
             flow.user_agent = self.app_name
             try:
-                import argparse
                 parser = argparse.ArgumentParser(description=__doc__,
                          formatter_class=argparse.RawDescriptionHelpFormatter,
                          parents=[tools.argparser])

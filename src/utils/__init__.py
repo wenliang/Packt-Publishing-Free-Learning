@@ -15,6 +15,3 @@ if PY2:
         sys.setdefaultencoding('utf8')
     except ImportError:
         pass
-
-import logging
-from . import logger as log_manager
