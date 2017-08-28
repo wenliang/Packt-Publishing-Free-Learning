@@ -273,8 +273,8 @@ class BookDownloader(object):
             if formats is None:
                 formats = self.download_formats
         if titles is not None:
-            temp_book_data = [data for data in self.book_data \
-                              if any(PacktAccountDataModel.convert_book_title_to_valid_string(data['title']) == \
+            temp_book_data = [data for data in self.book_data
+                              if any(PacktAccountDataModel.convert_book_title_to_valid_string(data['title']) ==
                                      PacktAccountDataModel.convert_book_title_to_valid_string(title) for title in
                                      titles)]
         else:  # download all
