@@ -375,7 +375,12 @@ if __name__ == '__main__':
                         action="store_true")
 
     args = parser.parse_args()
-    cfg_file_path = os.path.join(args.cfgpath, "configFile.cfg")
+    if os.path.isdir(args.cfgpath):
+        cfg_file_path = os.path.join(args.cfgpath, "configFile.cfg")
+        logger.warning("The path to the configuration file should point to the file. " +
+                       "Support for directory paths is outdated.")
+    else:
+        cfg_file_path = args.cfgpath
     into_folder = args.folder
 
     try:
