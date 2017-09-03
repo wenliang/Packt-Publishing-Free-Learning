@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import os
 import configparser
 import smtplib
@@ -8,8 +7,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
 
-from utils import *
-logger = log_manager.get_logger(__name__)
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 
 COMMA = ", "

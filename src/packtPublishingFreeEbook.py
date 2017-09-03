@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 
 import argparse
 import datetime as dt
+import logging
 import os
 import re
 import sys
@@ -13,11 +14,10 @@ import requests
 from bs4 import BeautifulSoup
 from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask
 
-from utils import *
+from .utils.logger import get_logger
 
-logger = log_manager.get_logger(__name__)
-# downgrading logging level for requests
-logging.getLogger("requests").setLevel(logging.WARNING)
+logger = get_logger(__name__)
+logging.getLogger("requests").setLevel(logging.WARNING)  # downgrading logging level for requests
 
 DATE_FORMAT = "%Y/%m/%d"
 
@@ -273,8 +273,8 @@ class BookDownloader(object):
             if formats is None:
                 formats = self.download_formats
         if titles is not None:
-            temp_book_data = [data for data in self.book_data \
-                              if any(PacktAccountDataModel.convert_book_title_to_valid_string(data['title']) == \
+            temp_book_data = [data for data in self.book_data
+                              if any(PacktAccountDataModel.convert_book_title_to_valid_string(data['title']) ==
                                      PacktAccountDataModel.convert_book_title_to_valid_string(title) for title in
                                      titles)]
         else:  # download all
