@@ -68,6 +68,7 @@ class GoogleDriveManager(object):
             flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
             flow.user_agent = self.app_name
             try:
+                import argparse
                 parser = argparse.ArgumentParser(
                     description=__doc__,
                     formatter_class=argparse.RawDescriptionHelpFormatter,
