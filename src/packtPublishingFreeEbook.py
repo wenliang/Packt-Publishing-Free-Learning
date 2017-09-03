@@ -85,7 +85,8 @@ class ConfigurationModel(object):
         return None
 
 class PacktPublishingFreeEbook(object):
-    
+    """Contains some methods to claim, download or send a free daily ebook"""
+
     download_formats = ('pdf', 'mobi', 'epub', 'code')
     session = None   
 
@@ -354,7 +355,7 @@ if __name__ == '__main__':
 
         # Grab the newest book
         if args.grab or args.grabl or args.grabd or args.sgd or args.mail:
-            #ebook.grab_ebook(log_ebook_infodata=args.grabl)
+            ebook.grab_ebook(log_ebook_infodata=args.grabl)
 
             # Send email about successful book grab. Do it only when book
             # isn't going to be emailed as we don't want to send email twice.
@@ -414,7 +415,6 @@ if __name__ == '__main__':
         logger.error("Exception occurred {}".format(e))
         if args.status_mail:
             from utils.mail import MailBook
-
             mb = MailBook(cfg_file_path)
             mb.send_info(
                 subject=FAILURE_EMAIL_SUBJECT.format(dt.datetime.now().strftime(DATE_FORMAT)),
