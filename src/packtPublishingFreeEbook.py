@@ -13,7 +13,7 @@ import configparser
 import requests
 from bs4 import BeautifulSoup
 
-from utils.anticaptcha import Anticaptcha, AnticaptchaException
+from utils.anticaptcha import Anticaptcha
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -84,11 +84,12 @@ class ConfigurationModel(object):
             return re.sub(r'(?u)[^-\w.#]', '', title.strip().replace(' ', '_'))  # format valid pathname
         return None
 
+
 class PacktPublishingFreeEbook(object):
     """Contains some methods to claim, download or send a free daily ebook"""
 
     download_formats = ('pdf', 'mobi', 'epub', 'code')
-    session = None   
+    session = None
 
     def __init__(self, cfg):
         self.cfg = cfg
@@ -96,7 +97,7 @@ class PacktPublishingFreeEbook(object):
 
     def login_required(func, *args, **kwargs):
         def login_decorated(self, *args, **kwargs):
-            if self.session == None:
+            if self.session is None:
                 self.__create_http_session()
             return func(self, *args, **kwargs)
         return login_decorated
@@ -195,8 +196,7 @@ class PacktPublishingFreeEbook(object):
         for line in all:
             if not line.get('nid'):
                 continue
-            title = line.find('div', {'class': 'title'}).getText().strip(' ').replace(' [eBook]',
-                                                                                      '') # remove '[eBook]' from the title
+            title = line.find('div', {'class': 'title'}).getText().strip(' ').replace(' [eBook]', '')
             download_urls = {}
             for a in line.find_all('a'):
                 url = a.get('href')
@@ -283,7 +283,10 @@ class PacktPublishingFreeEbook(object):
                             logger.info("Downloading eBook: '{}' in .{} format...".format(title, form))
                         try:
                             r = self.session.get(
-                                self.cfg.packtpub_url + temp_book_data[i]['download_urls'][form], timeout=100, stream=True)
+                                self.cfg.packtpub_url + temp_book_data[i]['download_urls'][form],
+                                timeout=100,
+                                stream=True
+                            )
                             if r.status_code is 200:
                                 with open(full_file_path, 'wb') as f:
                                     total_length = int(r.headers.get('content-length'))
@@ -291,7 +294,9 @@ class PacktPublishingFreeEbook(object):
                                     for num, chunk in enumerate(r.iter_content(chunk_size=1024)):
                                         if chunk:
                                             if is_interactive:
-                                                PacktPublishingFreeEbook.update_download_progress_bar(num / num_of_chunks)
+                                                PacktPublishingFreeEbook.update_download_progress_bar(
+                                                    num / num_of_chunks
+                                                )
                                             f.write(chunk)
                                             f.flush()
                                     if is_interactive:
@@ -319,6 +324,7 @@ class PacktPublishingFreeEbook(object):
         else:
             print("")
 
+
 # Main
 if __name__ == '__main__':
 
@@ -341,7 +347,8 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument("-f", "--folder", help="downloads eBook into a folder", default=False,
                         action="store_true")
-    parser.add_argument("-c", "--cfgpath", default=os.path.join(os.getcwd(), "configFile.cfg"), help="select folder where config file can be found")
+    parser.add_argument("-c", "--cfgpath", help="select folder where config file can be found",
+                        default=os.path.join(os.getcwd(), "configFile.cfg"))
     parser.add_argument("--noauth_local_webserver", help="set if you want auth google_drive without local browser",
                         action="store_true")
 
@@ -401,7 +408,7 @@ if __name__ == '__main__':
                 try:
                     pdf_path = [path for path in paths if path.endswith('.pdf')][-1]
                     mobi_path = [path for path in paths if path.endswith('.mobi')][-1]
-                except:
+                except IndexError:
                     pass
                 if pdf_path:
                     mb.send_book(pdf_path)
