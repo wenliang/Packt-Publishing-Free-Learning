@@ -1,4 +1,3 @@
-
 import argparse
 import configparser
 import io
@@ -67,20 +66,13 @@ class GoogleDriveManager(object):
         if not credentials or credentials.invalid:
             flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
             flow.user_agent = self.app_name
-            try:
-                import argparse
-                parser = argparse.ArgumentParser(
-                    description=__doc__,
-                    formatter_class=argparse.RawDescriptionHelpFormatter,
-                    parents=[tools.argparser]
-                )
-                flags = parser.parse_args(sys.argv[2:])
-            except ImportError:
-                flags = None
-            if flags:
-                credentials = tools.run_flow(flow, store, flags)
-            else:  # To be compatible with 2.6
-                credentials = tools.run(flow, store)
+            parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                parents=[tools.argparser]
+            )
+            flags = parser.parse_args(sys.argv[2:])
+            credentials = tools.run_flow(flow, store, flags)
             logger.success('Storing credentials to ' + credential_path)
         return credentials
 
