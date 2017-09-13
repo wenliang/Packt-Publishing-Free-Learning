@@ -73,7 +73,7 @@ class ConfigurationModel(object):
                                     self.configuration.get("DOWNLOAD_DATA", 'download_book_titles').split(',')]
             if len(download_book_titles) is 0:
                 download_book_titles = None
-        except configparser.Error as e:
+        except configparser.Error:
             pass
         return download_path, download_formats, download_book_titles
 
