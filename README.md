@@ -152,7 +152,7 @@ The script uses [anti-captcha.com](https://anti-captcha.com/) service to bypass 
   ```
     [LOGIN_DATA]
     email: youremail@youremail.com
-    email: yourpassword    
+    password: yourpassword    
     
     [DOWNLOAD_DATA]
     download_folder_path: C:\Users\me\Desktop\myEbooksFromPackt
