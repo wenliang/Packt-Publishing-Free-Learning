@@ -1,11 +1,13 @@
-import requests 
+import requests
 import time
 
 from .logger import get_logger
 logger = get_logger(__name__)
 
+
 class AnticaptchaException(Exception):
     pass
+
 
 class Anticaptcha(object):
     """
@@ -15,7 +17,7 @@ class Anticaptcha(object):
     api_url = 'https://api.anti-captcha.com'
     create_task_url = api_url + '/createTask'
     get_task_result_url = api_url + '/getTaskResult'
-    timeout_time_sec = 60 # timeout
+    timeout_time_sec = 60  # timeout
 
     def __init__(self, api_key):
         self.api_key = api_key
@@ -24,7 +26,10 @@ class Anticaptcha(object):
     def __post_request(self, url, **kwargs):
         response = self.session.post(url, **kwargs).json()
         if response.get('errorId'):
-            raise AnticaptchaException("Error {0} occured: {1}".format(response.get('errorCode'), response.get('errorDescription')))
+            raise AnticaptchaException("Error {0} occured: {1}".format(
+                response.get('errorCode'),
+                response.get('errorDescription')
+            ))
         return response
 
     def __create_noproxy_task(self, website_url, website_key):
@@ -42,7 +47,7 @@ class Anticaptcha(object):
     def __wait_for_task_result(self, task_id):
         start_time = time.time()
         content = {
-            'clientKey':self.api_key,
+            'clientKey': self.api_key,
             'taskId': task_id
         }
         while (time.time() - start_time) < self.timeout_time_sec:
@@ -50,12 +55,12 @@ class Anticaptcha(object):
             if response.get('status') == 'ready':
                 return response
             time.sleep(1)
-        raise AnticaptchaException("Timeout %d reached " % self.timeout_time_sec)
+        raise AnticaptchaException('Timeout {} reached '.format(self.timeout_time_sec))
 
     def solve_recaptcha(self, website_url, website_key):
         task_id = self.__create_noproxy_task(website_url, website_key)
-        logger.info('TaskId created: %d'%task_id)
-        logger.info('Waiting for completion of the task: %d...'%task_id)
+        logger.info('TaskId created: {}'.format(task_id))
+        logger.info('Waiting for completion of the task: {}...'.format(task_id))
         solution = self.__wait_for_task_result(task_id)['solution']['gRecaptchaResponse']
-        logger.success('Solution found for task: %d'%task_id)
+        logger.success('Solution found for task: {}'.format(task_id))
         return solution

@@ -6,7 +6,7 @@
 The script uses [anti-captcha.com](https://anti-captcha.com/) service to bypass the Recaptcha captcha to function fully automatically. Anticaptcha.com employs people to solve captcha test use whether or not the user is human. The service costs about $ 2 per thousand captcha test, allowing you to operate for a few dollars over the years.
 
 ### Requirements:
-* Install either Python 2.x or 3.x
+* Install either Python 2.7 or 3.x
 * Install pip (if you have not installed it yet).
   To install pip, download:  https://bootstrap.pypa.io/get-pip.py ,
   then run the following command:

@@ -1,4 +1,3 @@
-
 import argparse
 import configparser
 import io
@@ -67,20 +66,13 @@ class GoogleDriveManager(object):
         if not credentials or credentials.invalid:
             flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
             flow.user_agent = self.app_name
-            try:
-                import argparse
-                parser = argparse.ArgumentParser(
-                    description=__doc__,
-                    formatter_class=argparse.RawDescriptionHelpFormatter,
-                    parents=[tools.argparser]
-                )
-                flags = parser.parse_args(sys.argv[2:])
-            except ImportError:
-                flags = None
-            if flags:
-                credentials = tools.run_flow(flow, store, flags)
-            else:  # To be compatible with 2.6
-                credentials = tools.run(flow, store)
+            parser = argparse.ArgumentParser(
+                description=__doc__,
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                parents=[tools.argparser]
+            )
+            flags = parser.parse_args(sys.argv[2:])
+            credentials = tools.run_flow(flow, store, flags)
             logger.success('Storing credentials to ' + credential_path)
         return credentials
 
@@ -178,7 +170,9 @@ class GoogleDriveManager(object):
                     else:
                         logger.info('File {} already exists on Google Drive'.format(file_attrs[0]))
                 except Exception as e:
-                        logger.error('Error {} occurred while sending file: {} to Google Drive'.format(e, file_attrs[0]))
+                        logger.error('Error {} occurred while sending file: {} to Google Drive'.format(
+                            e, file_attrs[0])
+                        )
 
     def download_file(self, file_name, file_id):
         request = self._service.files().get_media(fileId=file_id)
