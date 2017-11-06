@@ -37,11 +37,7 @@ class ConfigurationModel(object):
         if not self.configuration.read(self.cfg_file_path):
             raise configparser.Error('{} file not found'.format(self.cfg_file_path))
         self.book_infodata_log_file = self._get_config_ebook_extrainfo_log_filename()
-
-        # Anticaptcha settings.
         self.anticaptcha_clientkey = self.configuration.get("ANTICAPTCHA_DATA", 'key')
-        self.anticaptcha_timeout = self.configuration.get("ANTICAPTCHA_DATA", 'timeout')
-
         self.packtpub_url = "https://www.packtpub.com"
         self.my_books_url = "https://www.packtpub.com/account/my-ebooks"
         self.login_url = "https://www.packtpub.com/register"
@@ -138,11 +134,7 @@ class PacktPublishingFreeEbook(object):
     def __claim_ebook_captchafull(self, url, html):
         key_pattern = re.compile("Packt.offers.onLoadRecaptcha\(\'(.+?)\'\)")
         website_key = key_pattern.search(html.find(text=key_pattern)).group(1)
-
         anticaptcha = Anticaptcha(self.cfg.anticaptcha_clientkey)
-        # Default timeout of 60s is too short for busy periods.
-        anticaptcha.timeout_time_sec = self.cfg.anticaptcha_timeout
-
         captcha_solved_id = anticaptcha.solve_recaptcha(url, website_key)
         claim_url = html.select_one('.free-ebook form')['action']
         return self.session.post(self.cfg.packtpub_url + claim_url,
