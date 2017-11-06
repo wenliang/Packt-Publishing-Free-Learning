@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/igbt6/Packt-Publishing-Free-Learning.svg?branch=master)](https://travis-ci.org/igbt6/Packt-Publishing-Free-Learning)
+
 ## Free Learning PacktPublishing script
 
 **packtPublishingFreeEbook.py** - script that automatically grabs and download a daily free eBook from https://www.packtpub.com/packt/offers/free-learning
