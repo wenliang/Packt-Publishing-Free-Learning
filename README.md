@@ -1,12 +1,14 @@
-## Free Learning PacktPublishing scripts
+[![Build Status](https://travis-ci.org/igbt6/Packt-Publishing-Free-Learning.svg?branch=master)](https://travis-ci.org/igbt6/Packt-Publishing-Free-Learning)
 
-**grabPacktFreeBook.py** - script that automatically grabs a daily free eBook from https://www.packtpub.com/packt/offers/free-learning
+## Free Learning PacktPublishing script
 
-**packtFreeBookDownloader.py** - script which downloads already claimed eBooks from your account https://www.packtpub.com/account/my-ebooks
+**packtPublishingFreeEbook.py** - script that automatically grabs and download a daily free eBook from https://www.packtpub.com/packt/offers/free-learning
+  You can use it also to download the already claimed eBooks from your account https://www.packtpub.com/account/my-ebooks
 
+The script uses [anti-captcha.com](https://anti-captcha.com/) service to bypass the Recaptcha captcha to function fully automatically. Anticaptcha.com employs people to solve captcha test use whether or not the user is human. The service costs about $ 2 per thousand captcha test, allowing you to operate for a few dollars over the years.
 
 ### Requirements:
-* Install either Python 2.x or 3.x
+* Install either Python 2.7 or 3.x
 * Install pip (if you have not installed it yet).
   To install pip, download:  https://bootstrap.pypa.io/get-pip.py ,
   then run the following command:
@@ -14,45 +16,81 @@
   ```  
   python get-pip.py
   ```
-  
-  Once pip has been installed, run the following:
-  
-  ```
-  pip install requests
-  
-  pip install beautifulsoup4
+* Optionally install [*virtualenv*](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (pip install virtualenv)
 
+* Once pip has been installed, run the following command:
   ```
-  
-  If you use Python 2.x :
-  
-  ```  
-  pip install future
+  pip install -r requirements.txt
+  ```
 
-  ```
-  
+* change a name of **configFileTemplate.cfg** to **configFile.cfg**  
 * change your login credentials in **configFile.cfg** file
-  
-
+* register on [anti-captcha.com](https://anti-captcha.com/), grab API key and put in **configFile.cfg**
 
 ### Usage:
-**[grabPacktFreeBook.py]**
-* You can manually run grabPacktFreeBook.py script to get the book:
+1. The script **[packtPublishingFreeEbook.py]** might be fired up with one of 7 arguments:
 
+  - Option *-g* [--grab] - claims (grabs) a daily eBook into your account
   ```
-  $ python grabPacktFreeBook.py
+  python packtPublishingFreeEbook.py -g
   ```
-* Or set it to be invoked automatically:
+
+  - Option *-gl* [--grabl] - claims (grabs) a daily eBook into your account and save book info to log file specified in config file
+  ```
+  python packtPublishingFreeEbook.py -gl
+  ```
+
+  - Option *-gd* [--grabd] - claims (grabs) a daily ebook and downloads the title afterwards to the location specified under *[download_folder_path]* field (configFile.cfg file)
+  ```
+  python packtPublishingFreeEbook.py -gd
+  ```
   
-  **LINUX** (tested on UBUNTU):
+  - Option *-da* [--dall] - downloads all ebooks from your account
+  ```
+  python packtPublishingFreeEbook.py -da
+  ```
+  
+  - Option *-dc* [--dchosen] - downloads chosen titles specified under *[download_book_titles]* field in *configFile.cfg*
+  ```
+  python packtPublishingFreeEbook.py -dc
+  ```
+
+  - Option *-sgd* [--sgd] - claims and uploads a book to *[gdFolderName]* folder onto Google Drive (more about setup Google Drive api in GOOGLE_DRIVE_API Setup)  
+  ```
+  python packtPublishingFreeEbook.py -sgd
+  ```
+  
+  - Option *-m* [--mail] - claims and sends an email with the newest book in PDF format (and MOBI if is also downloaded; see mail options confguration under [MAIL] path in *configFile.cfg*)
+  ```
+  python packtPublishingFreeEbook.py -m
+  ```
+  
+  - SubOption *-sm* [--status_mail] - sends fail report email whether script execution was successful
+  ```
+  python packtPublishingFreeEbook.py -gd -sm
+  ```
+  
+  - SubOption *-f* [--folder] - downloads an ebook into a created folder, named as ebook's title
+  ```
+  python packtPublishingFreeEbook.py -gd -f
+  ```
+  
+  - SubOption *-c* [--cfgpath] - selects folder where config file can be found (default: cwd)
+  ```
+  python packtPublishingFreeEbook.py -gd -c /home/usr/
+  ```
+  
+2. You can set the script to be invoked automatically:
+  
+  **LINUX** (tested on UBUNTU 16.04):
   
   modify access permissions of the script:
   
   ```
-  $ chmod a+x grabPacktFreeBook.py 
+  $ chmod a+x packtPublishingFreeEbook.py 
   ```
   
-  **CRON** setup (more: https://help.ubuntu.com/community/CronHowto) :
+  **cron** setup (more: https://help.ubuntu.com/community/CronHowto) :
   
   ```
   $ sudo crontab -e
@@ -61,7 +99,7 @@
   paste (modify all paths correctly according to your setup):
   
   ```
-  0 12 * * * cd /home/me/Desktop/PacktScripts/ && /usr/bin/python3 grabPacktFreeBook.py > /home/me/Desktop/PacktScripts/grabPacktFreeBook.log 2>&1
+  0 12 * * * cd /home/me/Desktop/PacktScripts/ && /usr/bin/python3 packtPublishingFreeEbook.py -gd > /home/me/Desktop/PacktScripts/packtPublishingFreeEbook.log 2>&1
   ```
   
   and save the crontab file. To verify if CRON fires up the script correctly, run a command:
@@ -70,7 +108,7 @@
   $ sudo grep CRON /var/log/syslog
   ```
   
-  **WINDOWS** (tested on win7):
+  **WINDOWS** (tested on win7,8,10):
   
   **schtasks.exe** setup (more info: https://technet.microsoft.com/en-us/library/cc725744.aspx) :
   
@@ -96,37 +134,73 @@
   
   ```
   schtasks /delete /tn "grabEbookFromPacktTask"
-  ```  
+  ```
   
-* To download the already claimed book from your account set field **downloadBookAfterClaim** in **configFile.cfg** to **YES**  and modify **downloadFormats** you want to get
-
-
-**[packtFreeBookDownloader.py]**
-* It can be used to download your books from PacktPublishing
-
-* Just fire up the script to download all your already claimed books in declared formats (look at **downloadFormats** in **configFile.cfg**). To downlaod all books the field: **downloadBookTitles** shall be commented out like shown below:
-
+  If you want to log all downloads add -l switch to grabEbookFromPacktTask i.e.
   ```
-  ;downloadBookTitles: Unity 4.x Game AI Programming , Multithreading in C# 5.0 Cookbook
+  schtasks /create /sc DAILY /tn "grabEbookFromPacktTask" /tr "C:\Users\me\Desktop\GrabPacktFreeBook\grabEbookFromPacktTask.bat -l" /st 12:00
+  ``` 
+  
+  If you want to additionaly make command line windows stay open after download add -p switch i.e.
   ```
+  schtasks /create /sc DAILY /tn "grabEbookFromPacktTask" /tr "C:\Users\me\Desktop\GrabPacktFreeBook\grabEbookFromPacktTask.bat -l -p" /st 12:00
+  ``` 
 
-* To download chosen titles from your account put them into **downloadBookTitles** in **configFile.cfg**
+* EXAMPLE: download **'Unity 4.x Game AI Programming'** and  **'Multithreading in C# 5.0 Cookbook'** books in all available formats  (pdf, epub, mobi) with zipped source code file from your packt account
+  
+  To download chosen titles from your account, you must put them into **download_book_titles** in **configFile.cfg** as shown below:
   
   **configFile.cfg** example:
-    download **'Unity 4.x Game AI Programming'** and  **'Multithreading in C# 5.0 Cookbook'** books in all available formats (pdf, epub, mobi) with zipped source code file
-
   ```
     [LOGIN_DATA]
-    email= youremail@youremail.com
-    password= yourpassword    
-
+    email: youremail@youremail.com
+    password: yourpassword    
     
     [DOWNLOAD_DATA]
-    downloadFolderPath: C:\Users\me\Desktop\myEbooksFromPackt
-    downloadBookAfterClaim: YES
-    downloadFormats: pdf, epub, mobi, code
-    downloadBookTitles: Unity 4.x Game AI Programming , Multithreading in C# 5.0 Cookbook
+    download_folder_path: C:\Users\me\Desktop\myEbooksFromPackt
+    download_formats: pdf, epub, mobi, code
+    download_book_titles: Unity 4.x Game AI Programming , Multithreading in C# 5.0 Cookbook
+    ebook_extra_info_log_file_path: eBookMetadata.log
     
+    [GOOGLE_DRIVE_DATA]
+    gd_app_name: GoogleDriveManager
+    gd_folder_name: PACKT_EBOOKS
+  ```
+  run:
+  ```
+    python packtPublishingFreeEbook.py -dc
+  ```
+
+### GOOGLE_DRIVE_API Setup:
+Full info about the Google Drive python API can be found [here](https://developers.google.com/drive/v3/web/quickstart/python)  
+
+1. Turn on the Drive API  
+  - Use [this wizard](https://console.developers.google.com/flows/enableapi?apiid=drive) to create or select a project in the Google Developers Console and automatically turn on the API. Click Continue, then Go to credentials.
+  - On the *Add credentials to your project page*, click the *Cancel* button.
+  - At the top of the page, select the OAuth consent screen tab. Select an Email address, enter a *Product name* if not already set, and click the Save button.
+  - Select the Credentials tab, click the Create credentials button and select *OAuth client ID*.
+  - Select the application type *Other*, enter the name *"GoogleDriveManager"*, and click the Create button.
+  - Click *OK* to dismiss the resulting dialog.
+  - Click the file_download (Download JSON) button to the right of the client ID.
+  - Move this file to your working directory and rename it *"client_secret.json"*
+
+2. Install the Google Client Library
+  - Run the following command to install the library using pip:
+  ```
+  pip install --upgrade google-api-python-client  or pip install --upgrade google-api-python-client-py3
+  ``` 
+
+3. Create credentials folder:
+  - Simply, just fire up the script with *-sgd* argument; During first launch you will see a prompt in your browser asking for permissions, click then *allow*
+  ```
+  python packtPublishingFreeEbook.py -sgd
   ```  
+  - Or if you're unable to launch browser locally (e.g. you're connecting through SSH without X11 forwarding) use this command once, follow instructions and give permission and later you can use normal command (without *--noauth_local_webserver*).
+  ```
+  python packtPublishingFreeEbook.py -sgd --noauth_local_webserver
+  ```  
+4. Already done!
+  - Run the same command as above to claim and upload the eBook to Google Drive.
+
 
 In case of any questions feel free to ask, happy grabbing!

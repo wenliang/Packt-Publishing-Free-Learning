@@ -1,3 +1,9 @@
+.git
+.credentials
+client_secret.json
+env/
 configFile.cfg
-wrapper.sh
+*.log
+__pycache__/
 *.pyc
+wrapper.sh
